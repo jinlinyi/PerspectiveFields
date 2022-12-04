@@ -1,0 +1,225 @@
+<html>
+  <head>
+    <title>Perspective Fields</title>
+    <meta property="og:title" content="Perspective Fields for Single Image Camera Calibration"/>
+    <meta property="og:image" content="teaser.png"/>
+    <meta property="og:description" content="L. Jin, S. Qian, A. Owens, D. F. Fouhey" />
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- webpage template-->
+    <link rel="stylesheet" href="website.css">
+    <link rel="stylesheet" href="slider.css">
+    <!-- model-viewer css -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
+    <script type="text/javascript" src="pannellum/src/js/pannellum.js"></script>
+    <script type="text/javascript" src="pannellum/src/js/libpannellum.js"></script>
+
+    <style>
+    #panorama {
+        width: 600px;
+        height: 400px;
+    }
+    </style>
+  </head>
+  <body>
+    <br>
+    <center>
+      <span style="font-size:38px">Perspective Fields for Single Image Camera Calibration</span>
+    </center>
+    <br><br>
+    <table align=center width=100%>
+      <tr>
+        <td align=center width=14%>
+          <center>
+            <span style="font-size:20px"><a href="https://jinlinyi.github.io/">Linyi Jin<sup>1</sup></a></span>
+          </center>
+        </td>
+        <td align=center width=14%>
+          <center>
+            <span style="font-size:20px"><a href="https://jimmie33.github.io/">Jianming Zhang<sup>2</sup></a></span>
+          </center>
+        </td>
+        <td align=center width=14%>
+          <center>
+            <span style="font-size:20px"><a href="https://yannickhold.com/">Yannick Hold-Geoffroy<sup>2</sup></a></span>
+          </center>
+        </td>
+        <td align=center width=14%>
+          <center>
+            <span style="font-size:20px"><a href="http://www.oliverwang.info/">Oliver Wang<sup>2</sup></a></span>
+          </center>
+        </td>
+        <td align=center width=14%>
+          <center>
+            <span style="font-size:20px"><a href="http://kmatzen.com/">Kevin Matzen<sup>2</sup></a></span>
+          </center>
+        </td>
+        <td align=center width=14%>
+          <center>
+            <span style="font-size:20px"><a href="https://www.linkedin.com/in/matthew-sticha-746325202">Matthew Sticha<sup>1</sup></a></span>
+          </center>
+        </td>
+        <td align=center width=14%>
+          <center>
+            <span style="font-size:20px"><a href="https://web.eecs.umich.edu/~fouhey/">David F. Fouhey<sup>1</sup></a></span>
+          </center>
+        </td>
+      </tr>
+    </table>
+    <br>
+    <table align=center width=40%>
+      <tr>
+        <td align=center>
+          <center>
+            <span style="font-size:20px"><sup>1</sup>University of Michigan</span> <br><br>
+          </center>
+        </td>
+        <td align=center>
+          <center>
+            <span style="font-size:20px"><sup>2</sup>Adobe Research</span> <br><br>
+          </center>
+        </td>
+      </tr>
+    </table>
+    <br>
+    <table align=center width=100%>
+      <tr>
+        <td align=center width=20%>
+          <center>
+            <span style="font-size:20px"><a href="">[arXiv]</a></span>
+          </center>
+        </td>
+        <td align=center width=20%>
+          <center>
+            <span style="font-size:20px"><a href="">[code]</a></span>
+          </center>
+        </td>
+        <td align=center width=20%>
+          <center>
+            <span style="font-size:20px"><a href="">[video]</a></span>
+          </center>
+        </td>
+      </tr>
+    </table>
+    <table align=center width=100%>
+    </table>
+    <br>
+    <table align=center width=100%>
+      <tr>
+        <td>
+          <center>
+            <img src = "teaser.png" width="100%"></img><br>
+          </center>
+        </td>
+      </tr>
+      <td width=600px>
+          <span style="font-size:14px"><i>(A): a photo (credit David Clapp) with an off-centered principal point.
+            (B), (C): assuming traditional pinhole model with principal point at the center,
+            there is no way to correctly represent both up directions (wrong in B) and horizon (wrong in C).
+            (D): Our proposed Perspective Fields model correctly models the Up-vectors (<span style="color:#41B254"><b>Green</b></span> arrows) aligned with gravity, 
+            and Latitude values (contour line: -&pi;/2 <img src="resources/seismic.png" width="5%"></img> &pi;/2) with 0&deg; on  the horizon.
+            We can further recover camera parameters Roll -0.5&deg;, Pitch 1.7&deg;, FoV 64.6&deg; and principal point at &#215; from the prediction.
+             </i>
+      </td>
+      </tr>
+    </table>
+	<br>
+	<div>
+		<center>
+		<p class="abstract">
+			Geometric camera calibration is often required for applications that understand the perspective of the image. 
+      We propose perspective fields as a representation that models the local perspective properties of an image. 
+      Perspective Fields contain per-pixel information about the camera view, parameterized as an up vector and a latitude value. 
+      This representation has a number of advantages as it makes minimal assumptions about the camera model and is invariant or equivariant 
+      to common image editing operations like cropping, warping, and rotation. It is also more interpretable and aligned with human perception. 
+      We train a neural network to predict Perspective Fields and the predicted Perspective Fields can be converted to calibration parameters easily. 
+      We demonstrate the robustness of our approach under various scenarios compared with camera calibration-based methods and show example applications in image compositing.
+		</p>
+		</center>
+  </div>
+  <br><br>
+  <hr>
+  <center>
+    <h1>Video</h1>
+  </center>
+  <div>
+    <p align="center">
+      <iframe style="width: 50%; height:50%; min-width:300px" src="https://www.youtube.com/embed/dQw4w9WgXcQ" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    </p>
+  </div>
+
+  <!-- <div id="panorama"></div>
+  <script>
+  pannellum.viewer('panorama', {
+      "type": "equirectangular",
+      "panorama": "https://pannellum.org/images/alma.jpg"
+  });
+  </script> -->
+
+<hr>
+<center>
+  <h1>Perspective Fields on Pinhole Camera</h1>
+</center>
+<div>
+  <p align="center">
+    Roll&nbsp; &nbsp; &nbsp;<input id="valRoll" type="range" min="-40" max="40" value="0" step="10" oninput="showVal()" onchange="showVal()" />
+    <span id="range_roll" class="range-slider__value">0</span><br>
+
+    Pitch&nbsp;&nbsp;  <input id="valPitch" type="range" min="-90" max="90" value="0" step="10" oninput="showVal()" onchange="showVal()" />
+    <span id="range_pitch" class="range-slider__value">0</span><br>
+
+    VFoV&nbsp; &nbsp;<input id="valFoV" type="range" min="50" max="100" value="70" step="10" oninput="showVal()" onchange="showVal()" />
+    <span id="range_fov" class="range-slider__value">70</span><br>
+
+    <img id="img">
+
+    <!-- <div class='container'>
+      <div class='img background-img' id="img_blend"></div>
+      <div class='img foreground-img' id="img_original"></div>
+      <input type="range" min="1" max="100" value="50" class="slider" name='slider' id="slider">
+      <div class='slider-button'></div>
+    </div> -->
+  </p>
+</div>
+
+<script>
+
+
+var valRoll = document.getElementById("valRoll").value;
+var valPitch = document.getElementById("valPitch").value;
+var valFoV = document.getElementById("valFoV").value;
+document.getElementById("range_roll").innerHTML=valRoll;
+document.getElementById("range_pitch").innerHTML=valPitch;
+document.getElementById("range_fov").innerHTML=valFoV;
+document.getElementById("img").src = "resources/interactive_demo/blend_roll" + valRoll + "_pitch" + valPitch + "_vfov" + valFoV + ".jpg";
+// document.getElementById("img_blend").url = "output/blend_roll" + valRoll + "_pitch" + valPitch + "_vfov" + valFoV + ".png";
+// document.getElementById("img_original").url = "output/raw_roll" + valRoll + "_pitch" + valPitch + "_vfov" + valFoV + ".png";
+function showVal(){
+  var valRoll = document.getElementById("valRoll").value;
+  var valPitch = document.getElementById("valPitch").value;
+  var valFoV = document.getElementById("valFoV").value;
+  document.getElementById("range_roll").innerHTML=valRoll;
+  document.getElementById("range_pitch").innerHTML=valPitch;
+  document.getElementById("range_fov").innerHTML=valFoV;
+  document.getElementById("img").src = "resources/interactive_demo/blend_roll" + valRoll + "_pitch" + valPitch + "_vfov" + valFoV + ".jpg";
+  // document.getElementById("img_blend").url = "output/blend_roll" + valRoll + "_pitch" + valPitch + "_vfov" + valFoV + ".png";
+  // document.getElementById("img_original").url = "output/raw_roll" + valRoll + "_pitch" + valPitch + "_vfov" + valFoV + ".png";
+}
+</script>
+
+    <table align=center width=100%>
+      <tr>
+        <td>
+          <left>
+            <center>
+              <h1>Acknowledgements</h1>
+              
+			  This webpage template originally made from some <a href="https://richzhang.github.io/colorization/">colorful folks</a>.
+            </center>
+          </left>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
