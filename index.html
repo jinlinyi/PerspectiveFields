@@ -159,13 +159,16 @@
 </center>
 <div>
   <p align="center">
+    Check out Perspective Fields changes w.r.t. traditional camera parameters. 
+  </p>
+  <p align="center">
     Roll&nbsp; &nbsp; &nbsp;<input id="valRoll" type="range" min="-40" max="40" value="0" step="10" oninput="showVal()" onchange="showVal()" />
     <span id="range_roll" class="range-slider__value">0</span><br>
 
     Pitch&nbsp;&nbsp;  <input id="valPitch" type="range" min="-90" max="90" value="0" step="10" oninput="showVal()" onchange="showVal()" />
     <span id="range_pitch" class="range-slider__value">0</span><br>
 
-    VFoV&nbsp; &nbsp;<input id="valFoV" type="range" min="50" max="100" value="70" step="10" oninput="showVal()" onchange="showVal()" />
+    FoV&nbsp; &nbsp;<input id="valFoV" type="range" min="50" max="100" value="70" step="10" oninput="showVal()" onchange="showVal()" />
     <span id="range_fov" class="range-slider__value">70</span><br>
 
     <img id="img">
@@ -176,6 +179,14 @@
       <input type="range" min="1" max="100" value="50" class="slider" name='slider' id="slider">
       <div class='slider-button'></div>
     </div> -->
+  </p>
+  <p class="definition">
+    For each pixel location, the Perspective Field consists of a unit <b><i>Up-vector</i></b> and <b><i>Latitude</i></b>. 
+    The <b><i>Up-vector</i></b> is the projection of the up direction, shown in <span style="color:#41B254"><b>Green</b></span> arrows.
+    In perspective projection, it points to the vertical vanishing point. 
+    The <b><i>Latitude</i></b> of each pixel is defined as the angle between the incoming ray and the horizontal plane. 
+    We show it using contour line: -&pi;/2 <img src="resources/seismic.png" width="5%"></img> &pi;/2. Note 0&deg; is at the horizon.
+    
   </p>
 </div>
 
@@ -204,6 +215,7 @@ function showVal(){
 }
 </script>
 
+<hr>
     <table align=center width=100%>
       <tr>
         <td>
