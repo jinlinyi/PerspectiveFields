@@ -1,6 +1,7 @@
-@inproceedings{author20XXtitle,
-  title={Please cite me},
-  author={Author, First and Author, Second and Author, Third},
-  booktitle={Conference},
-  year={20XX}
+@article{
+  jin2022PerspectiveFields,
+  title={Perspective Fields for Single Image Camera Calibration},
+  author={Linyi Jin and Jianming Zhang and Yannick Hold-Geoffroy and Oliver Wang and Kevin Matzen and Matthew Sticha and David F. Fouhey},
+  journal={arXiv},
+  year={2022}
 }

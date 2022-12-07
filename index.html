@@ -11,12 +11,6 @@
     <link rel="stylesheet" href="website.css">
     <link rel="stylesheet" href="slider.css">
 
-    <style>
-    #panorama {
-        width: 600px;
-        height: 400px;
-    }
-    </style>
   </head>
   <body>
     <br>
@@ -83,12 +77,12 @@
       <tr>
         <td align=center width=20%>
           <center>
-            <span style="font-size:20px"><a href="resources/paper.pdf">[paper]</a></span>
+            <span style="font-size:20px"><a href="https://arxiv.org/abs/2212.03239">[arXiv]</a></span>
           </center>
         </td>
         <td align=center width=20%>
           <center>
-            <span style="font-size:20px"><a href="">[code]</a></span>
+            <span style="font-size:20px"><a href="https://github.com/jinlinyi/PerspectiveFields">[code]</a></span>
           </center>
         </td>
         <td align=center width=20%>
@@ -141,7 +135,7 @@
   </center>
   <div>
     <p align="center">
-      <iframe style="width: 50%; height:50%; min-width:300px" src="https://www.youtube.com/embed/sN5B_ZvMva8" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+      <iframe style="width: 70%; height:60%; min-width:300px" src="https://www.youtube.com/embed/sN5B_ZvMva8" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
     </p>
   </div>
 
@@ -159,7 +153,7 @@
 </center>
 <div>
   <p align="center">
-    Check out Perspective Fields changes w.r.t. traditional camera parameters. 
+    Check out how Perspective Fields change w.r.t. traditional camera parameters. 
   </p>
   <p align="center">
     Roll&nbsp; &nbsp; &nbsp;<input id="valRoll" type="range" min="-40" max="40" value="0" step="10" oninput="showVal()" onchange="showVal()" />
@@ -214,8 +208,569 @@ function showVal(){
   // document.getElementById("img_original").url = "output/raw_roll" + valRoll + "_pitch" + valPitch + "_vfov" + valFoV + ".png";
 }
 </script>
-
 <hr>
+<center>
+    <h1>Qualitative Results</h1>
+</center>
+
+<p>
+  We can train a neural network to predict Perspective Fields from a single image. Below are some examples. 
+  
+</p>
+<center>
+<table align=center width=80%>
+  <tr>
+    <td width=47%>
+        <center>
+            <h3> Input </h3>
+        </center>
+    </td>
+    <td width=6%>
+        <center>
+            <!-- <h3> </h3> -->
+        </center>
+    </td>
+    <td width=47%>
+        <center>
+            <h3> Perspective Fields </h3>
+        </center>
+    </td>
+  </tr>
+</table>
+<div style="height:80%;width:100%;overflow:scroll;">
+  <table align=center width=80%>
+    
+
+    <tr>
+      <td width=47%>
+          <div>
+              <p align="center">
+                  <img src="resources/merged/AdobeStock_324810274/_rgb.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+      <td width=6%>
+          <center>
+              <!-- <h3> </h3> -->
+          </center>
+      </td>
+      <td width=47%>
+          <div>
+              <p align="center">
+                <img src="resources/merged/AdobeStock_324810274/perspective_pred.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+    </tr>
+
+
+    <tr>
+      <td width=47%>
+          <div>
+              <p align="center">
+                  <img src="resources/merged/AdobeStock_363182152_crop/_rgb.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+      <td width=6%>
+          <center>
+              <!-- <h3> </h3> -->
+          </center>
+      </td>
+      <td width=47%>
+          <div>
+              <p align="center">
+                <img src="resources/merged/AdobeStock_363182152_crop/perspective_pred.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+    </tr>
+
+
+    <tr>
+      <td width=47%>
+          <div>
+              <p align="center">
+                  <img src="resources/merged/AdobeStock_331358641/_rgb.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+      <td width=6%>
+          <center>
+              <!-- <h3> </h3> -->
+          </center>
+      </td>
+      <td width=47%>
+          <div>
+              <p align="center">
+                <img src="resources/merged/AdobeStock_331358641/perspective_pred.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+    </tr>
+
+
+    <tr>
+      <td width=47%>
+          <div>
+              <p align="center">
+                  <img src="resources/merged/AdobeStock_346209022/_rgb.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+      <td width=6%>
+          <center>
+              <!-- <h3> </h3> -->
+          </center>
+      </td>
+      <td width=47%>
+          <div>
+              <p align="center">
+                <img src="resources/merged/AdobeStock_346209022/perspective_pred.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+    </tr>
+
+
+    <tr>
+      <td width=47%>
+          <div>
+              <p align="center">
+                  <img src="resources/merged/AdobeStock_286429091/_rgb.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+      <td width=6%>
+          <center>
+              <!-- <h3> </h3> -->
+          </center>
+      </td>
+      <td width=47%>
+          <div>
+              <p align="center">
+                <img src="resources/merged/AdobeStock_286429091/perspective_pred.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+    </tr>
+
+    <tr>
+      <td width=47%>
+          <div>
+              <p align="center">
+                  <img src="resources/merged/i4/_rgb.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+      <td width=6%>
+          <center>
+              <!-- <h3> </h3> -->
+          </center>
+      </td>
+      <td width=47%>
+          <div>
+              <p align="center">
+                <img src="resources/merged/i4/perspective_pred.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+    </tr>
+
+
+    <tr>
+      <td width=47%>
+          <div>
+              <p align="center">
+                  <img src="resources/merged/AdobeStock_281409603/_rgb.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+      <td width=6%>
+          <center>
+              <!-- <h3> </h3> -->
+          </center>
+      </td>
+      <td width=47%>
+          <div>
+              <p align="center">
+                <img src="resources/merged/AdobeStock_281409603/perspective_pred.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+    </tr>
+
+
+    <tr>
+      <td width=47%>
+          <div>
+              <p align="center">
+                  <img src="resources/merged/i5/_rgb.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+      <td width=6%>
+          <center>
+              <!-- <h3> </h3> -->
+          </center>
+      </td>
+      <td width=47%>
+          <div>
+              <p align="center">
+                <img src="resources/merged/i5/perspective_pred.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+    </tr>
+
+
+    <tr>
+      <td width=47%>
+          <div>
+              <p align="center">
+                  <img src="resources/merged/AdobeStock_213966069/_rgb.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+      <td width=6%>
+          <center>
+              <!-- <h3> </h3> -->
+          </center>
+      </td>
+      <td width=47%>
+          <div>
+              <p align="center">
+                <img src="resources/merged/AdobeStock_213966069/perspective_pred.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+    </tr>
+
+
+    <tr>
+      <td width=47%>
+          <div>
+              <p align="center">
+                  <img src="resources/merged/city-336708/_rgb.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+      <td width=6%>
+          <center>
+              <!-- <h3> </h3> -->
+          </center>
+      </td>
+      <td width=47%>
+          <div>
+              <p align="center">
+                <img src="resources/merged/city-336708/perspective_pred.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+    </tr>
+
+
+    <tr>
+      <td width=47%>
+          <div>
+              <p align="center">
+                  <img src="resources/merged/31897637928_f7b96f4c54_o/_rgb.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+      <td width=6%>
+          <center>
+              <!-- <h3> </h3> -->
+          </center>
+      </td>
+      <td width=47%>
+          <div>
+              <p align="center">
+                <img src="resources/merged/31897637928_f7b96f4c54_o/perspective_pred.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+    </tr>
+
+
+    <tr>
+      <td width=47%>
+          <div>
+              <p align="center">
+                  <img src="resources/merged/df905f9527875e25e0f1e581e8c3d93e--cityscape-photography-urban-photography/_rgb.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+      <td width=6%>
+          <center>
+              <!-- <h3> </h3> -->
+          </center>
+      </td>
+      <td width=47%>
+          <div>
+              <p align="center">
+                <img src="resources/merged/df905f9527875e25e0f1e581e8c3d93e--cityscape-photography-urban-photography/perspective_pred.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+    </tr>
+
+
+    <tr>
+      <td width=47%>
+          <div>
+              <p align="center">
+                  <img src="resources/merged/AdobeStock_247343062/_rgb.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+      <td width=6%>
+          <center>
+              <!-- <h3> </h3> -->
+          </center>
+      </td>
+      <td width=47%>
+          <div>
+              <p align="center">
+                <img src="resources/merged/AdobeStock_247343062/perspective_pred.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+    </tr>
+
+
+    <tr>
+      <td width=47%>
+          <div>
+              <p align="center">
+                  <img src="resources/merged/AdobeStock_133910589/_rgb.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+      <td width=6%>
+          <center>
+              <!-- <h3> </h3> -->
+          </center>
+      </td>
+      <td width=47%>
+          <div>
+              <p align="center">
+                <img src="resources/merged/AdobeStock_133910589/perspective_pred.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+    </tr>
+
+
+    <tr>
+      <td width=47%>
+          <div>
+              <p align="center">
+                  <img src="resources/merged/AdobeStock_100493759/_rgb.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+      <td width=6%>
+          <center>
+              <!-- <h3> </h3> -->
+          </center>
+      </td>
+      <td width=47%>
+          <div>
+              <p align="center">
+                <img src="resources/merged/AdobeStock_100493759/perspective_pred.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+    </tr>
+
+    <tr>
+      <td width=47%>
+          <div>
+              <p align="center">
+                  <img src="resources/merged/AdobeStock_293181326/_rgb.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+      <td width=6%>
+          <center>
+              <!-- <h3> </h3> -->
+          </center>
+      </td>
+      <td width=47%>
+          <div>
+              <p align="center">
+                <img src="resources/merged/AdobeStock_293181326/perspective_pred.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+    </tr>
+
+
+
+
+    <tr>
+      <td width=47%>
+          <div>
+              <p align="center">
+                  <img src="resources/merged/AdobeStock_376354836/_rgb.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+      <td width=6%>
+          <center>
+              <!-- <h3> </h3> -->
+          </center>
+      </td>
+      <td width=47%>
+          <div>
+              <p align="center">
+                <img src="resources/merged/AdobeStock_376354836/perspective_pred.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+    </tr>
+
+    <tr>
+      <td width=47%>
+          <div>
+              <p align="center">
+                  <img src="resources/merged/AdobeStock_249426052/_rgb.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+      <td width=6%>
+          <center>
+              <!-- <h3> </h3> -->
+          </center>
+      </td>
+      <td width=47%>
+          <div>
+              <p align="center">
+                <img src="resources/merged/AdobeStock_249426052/perspective_pred.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+    </tr>
+
+
+    <tr>
+      <td width=47%>
+          <div>
+              <p align="center">
+                  <img src="resources/merged/AdobeStock_288601275/_rgb.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+      <td width=6%>
+          <center>
+              <!-- <h3> </h3> -->
+          </center>
+      </td>
+      <td width=47%>
+          <div>
+              <p align="center">
+                <img src="resources/merged/AdobeStock_288601275/perspective_pred.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+    </tr>
+
+
+    <tr>
+      <td width=47%>
+          <div>
+              <p align="center">
+                  <img src="resources/merged/AdobeStock_111358819/_rgb.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+      <td width=6%>
+          <center>
+              <!-- <h3> </h3> -->
+          </center>
+      </td>
+      <td width=47%>
+          <div>
+              <p align="center">
+                <img src="resources/merged/AdobeStock_111358819/perspective_pred.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+    </tr>
+
+
+    <tr>
+      <td width=47%>
+          <div>
+              <p align="center">
+                  <img src="resources/merged/AdobeStock_366525358/_rgb.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+      <td width=6%>
+          <center>
+              <!-- <h3> </h3> -->
+          </center>
+      </td>
+      <td width=47%>
+          <div>
+              <p align="center">
+                <img src="resources/merged/AdobeStock_366525358/perspective_pred.jpg" width="100%" style="border:1px solid black;"></img>
+              </p>
+          </div>
+      </td>
+    </tr>
+
+
+
+</table>
+</div>
+</center>
+
+<p>
+  Moreover, it generalizes to non-perspective projections, such as the multi-perspective scene from Inception or artworks with various camera models.
+</p>
+
+<table align=center width=100%>
+  <tr>
+    <td>
+      <center>
+        <img src = "resources/nonpers.png" width="100%"></img><br>
+      </center>
+    </td>
+  </tr>
+</table>
+
+<br><hr>
+
+<table align=center width=65%>
+  <center><h1>Paper and Supplementary Material</h1></center>
+  <tr>
+      <td><a href="https://arxiv.org/abs/2212.03239"><img class="layered-paper-big" style="height:175px" src="./resources/paper.jpg"/></a></td>
+      <td><span style="font-size:14pt">Linyi Jin, Jianming Zhang, Yannick Hold-Geoffroy, Oliver Wang, Kevin Matzen, Matthew Sticha, David F. Fouhey<br>
+          <b>Perspective Fields for Single Image Camera Calibration.</b><br>
+          arXiv 2022.<br>
+          <!-- (hosted on <a href="#">ArXiv</a>)<br> -->
+          <!-- (<a href="#">Arxiv</a>)<br> -->
+          (<a href="https://arxiv.org/abs/2212.03239">Paper</a>)<br>
+          <span style="font-size:4pt"><a href=""><br></a>
+          </span>
+      </td>
+  </tr>
+</table>
+<br>
+
+<table align=center width=60%>
+  <tr>
+      <td><span style="font-size:14pt"><center>
+          <a href="./resources/bibtex.txt">[Bibtex]</a>
+      </center></td>
+  </tr>
+</table>
+<br>
+<hr>
+<br>
     <table align=center width=100%>
       <tr>
         <td>
