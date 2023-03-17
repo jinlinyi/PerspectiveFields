@@ -99,8 +99,8 @@ class VisualizationDemo(object):
                         to_numpy(predictions['pred_general_vfov']), 
                         degree=True,
                     ),
-                'cx': to_numpy(predictions['pred_rel_cx']) + 0.5,
-                'cy': to_numpy(predictions['pred_rel_cy']) + 0.5,
+                'cx': to_numpy(predictions['pred_rel_cx']),
+                'cy': to_numpy(predictions['pred_rel_cy']),
             }
         else:
             init_params = None
@@ -116,7 +116,9 @@ class VisualizationDemo(object):
         return rpfpp
         
 
-    def draw(self, image, latimap, gravity, latimap_format='', info=None, up_color=(0,1,0)):
+    def draw(self, image, latimap, gravity, latimap_format='', info=None, up_color=(0,1,0),
+        alpha_contourf=0.4, 
+        alpha_contour=0.9):
         vis_output = None
         visualizer = None
 
@@ -133,7 +135,7 @@ class VisualizationDemo(object):
             else:
                 print(latimap_format)
                 raise NotImplementedError
-            img = draw_latitude_field(img, latimap)   
+            img = draw_latitude_field(img, latimap, alpha_contourf=alpha_contourf, alpha_contour=alpha_contour)   
         if self.gravity_on:   
             img = draw_up_field(img, to_numpy(gravity).transpose(1,2,0), color=up_color)
              

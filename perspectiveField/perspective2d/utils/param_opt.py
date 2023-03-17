@@ -10,8 +10,8 @@ def get_latitude(R_world_from_cam, fltFocal, intWidth, intHeight, cx_rel, cy_rel
     """
     rad
     """
-    cx = cx_rel * intWidth
-    cy = cy_rel * intHeight
+    cx = (cx_rel + 0.5) * intWidth
+    cy = (cy_rel + 0.5) * intHeight
     X = np.linspace((-0.5 * intWidth) + 0.5, (0.5 * intWidth) - 0.5, intWidth).reshape(1, intWidth).repeat(intHeight, 0).astype(np.float32)
     Y = np.linspace((-0.5 * intHeight) + 0.5, (0.5 * intHeight) - 0.5, intHeight).reshape(intHeight, 1).repeat(intWidth, 1).astype(np.float32)
     f = np.ones_like(X)
@@ -24,6 +24,8 @@ def get_latitude(R_world_from_cam, fltFocal, intWidth, intHeight, cx_rel, cy_rel
     l = - torch.arctan(p_world[1,:,:] / torch.sqrt(p_world[0,:,:]**2 + p_world[2,:,:]**2))
     l = l[None, :, :]
     return l
+
+
 
 def get_abs_vvp(R_world_from_cam, fltFocal, cx, cy):
     gravity_world = torch.from_numpy(np.array([0, -1, 0]).astype(np.float32)).to(R_world_from_cam.device)
@@ -47,8 +49,8 @@ def get_up(R_world_from_cam, fltFocal, intWidth, intHeight, cx_rel, cy_rel):
     Y = np.linspace((-0.5 * intHeight) + 0.5, (0.5 * intHeight) - 0.5, intHeight).reshape(intHeight, 1).repeat(intWidth, 1).astype(np.float32) + 0.5 * intHeight
     xy_cam = np.stack([X, Y], axis=2)
     xy_cam = torch.from_numpy(xy_cam).to(R_world_from_cam.device)
-    cx = cx_rel * intWidth
-    cy = cy_rel * intHeight
+    cx = (cx_rel + 0.5) * intWidth
+    cy = (cy_rel + 0.5) * intHeight
     vvp_abs, elevation_sign = get_abs_vvp(R_world_from_cam, fltFocal, cx, cy)
     up = (torch.ones((intHeight, intWidth, 2)).to(R_world_from_cam.device) * vvp_abs - xy_cam) * elevation_sign
     up = F.normalize(up, dim=2)
@@ -121,8 +123,8 @@ class Model(nn.Module):
             init_p = torch.tensor(self.lati_ref[0, int(intHeight/2), int(intWidth/2)]).to(device)
             init_vfov = np.abs(self.lati_ref[0, 0, int(intWidth/2)] - self.lati_ref[0, int(intHeight-1), int(intWidth/2)])
             init_f = torch.tensor(general_vfov_to_focal(0.0, 0.0, 1, init_vfov, False))
-            init_cx = torch.tensor(0.5).to(device)
-            init_cy = torch.tensor(0.5).to(device)
+            init_cx = torch.tensor(0.0).to(device)
+            init_cy = torch.tensor(0.0).to(device)
 
         self.cy = nn.Parameter(init_cy, requires_grad=pp_on)
         self.cx = nn.Parameter(init_cx, requires_grad=pp_on)
@@ -198,7 +200,7 @@ def predict_rpfpp(
         'pred_roll': np.degrees(pred_roll), 
         'pred_pitch': np.degrees(pred_pitch), 
         'pred_rel_focal': pred_focal_rel, 
-        'pred_general_vfov': general_vfov(pred_cx - 0.5, pred_cy - 0.5, 1, pred_focal_rel, True), 
+        'pred_general_vfov': general_vfov(pred_cx, pred_cy, 1, pred_focal_rel, True), 
         'pred_rel_cx': pred_cx, 
         'pred_rel_cy': pred_cy,
     }

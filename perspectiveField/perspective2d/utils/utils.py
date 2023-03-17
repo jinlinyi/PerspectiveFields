@@ -148,43 +148,7 @@ def draw_up_field(img_rgb, vector_field, color=None, density=10, arrow_inv_len=2
         return vis_output.get_image()[:, :, ::-1]
     else:
         return vis_output
-        
-
-def draw_height_field(img_rgb, heightmap, alpha=0.2):
-    cmap = cm.tab20
-    heightmap = (heightmap - np.nanmin(heightmap)) / max((np.nanmax(heightmap) - np.nanmin(heightmap)), 1e-5)
-    color = cmap(heightmap)
-
-    if img_rgb is None:
-        return (color[:,:,:3] * 255).astype(np.uint8)
-
-    if img_rgb.dtype == 'uint8':
-        foreground = img_rgb[:, :, :3]
-    else:
-        foreground = img_rgb[:, :, :3] * 255
-
-    if color.dtype == 'uint8':
-        background = color[:, :, :3]
-    else:
-        background = color[:, :, :3] * 255
-
     
-    # Convert uint8 to float
-    foreground = foreground.astype(np.float32)
-    background = background.astype(np.float32)
-    alpha = np.ones_like(foreground) * alpha
-
-    # Multiply the foreground with the alpha matte
-    foreground = cv2.multiply(alpha, foreground)
-    # Multiply the background with ( 1 - alpha )
-    background = cv2.multiply(1.0 - alpha, background)
-
-    # Add the masked foreground and background.
-    outImage = cv2.add(foreground, background)
-
-    outImage = outImage.astype(np.uint8)
-    return outImage
-
 
 def draw_from_r_p_f(img, roll, pitch, vfov, mode, up_color=None, 
     alpha_contourf=0.4, alpha_contour=0.9, 
@@ -283,14 +247,18 @@ def draw_latitude_field(
     latimap=None,
     binmap=None,
     alpha_contourf=0.4, 
-    alpha_contour=0.9
+    alpha_contour=0.9,
+    return_img=True
     ):
     """
     latitude in radians
     """
     visualizer = VisualizerPerspective(img_rgb[:,:,::-1].copy())
     vis_output = visualizer.draw_lati(latimap, alpha_contourf, alpha_contour)
-    return vis_output.get_image()[:, :, ::-1]
+    if return_img:
+        return vis_output.get_image()[:, :, ::-1]
+    else:
+        return vis_output
 
 
 
