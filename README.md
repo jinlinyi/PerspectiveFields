@@ -17,12 +17,8 @@ We propose Perspective Fields as a representation that models the local perspect
 
 This repo contains code for our [paper][0]. 
 
-<div style="display: flex; justify-content: center;">
-  <img src="assets/swiping-1.gif" alt="swiping-1" style="width: 25%;">
-  <img src="assets/swiping-2.gif" alt="swiping-2" style="width: 25%;">
-  <img src="assets/swiping-3.gif" alt="swiping-3" style="width: 25%;">
-  <img src="assets/swiping-4.gif" alt="swiping-4" style="width: 25%;">
-</div>
+
+<img height="150" alt="swiping-1" src="assets/swiping-1.gif"> <img height="150" alt="swiping-2" src="assets/swiping-2.gif"> <img height="150" alt="swiping-3" src="assets/swiping-3.gif"> <img height="150" alt="swiping-4" src="assets/swiping-4.gif">
 
 
 
