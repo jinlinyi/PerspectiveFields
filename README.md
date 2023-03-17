@@ -18,7 +18,7 @@ We propose Perspective Fields as a representation that models the local perspect
 This repo contains code for our [paper][0]. 
 
 
-<img height="150" alt="swiping-1" src="assets/swiping-1.gif"> <img height="150" alt="swiping-2" src="assets/swiping-2.gif"> <img height="150" alt="swiping-3" src="assets/swiping-3.gif"> <img height="150" alt="swiping-4" src="assets/swiping-4.gif">
+<img height="100" alt="swiping-1" src="assets/swiping-1.gif"> <img height="100" alt="swiping-2" src="assets/swiping-2.gif"> <img height="100" alt="swiping-3" src="assets/swiping-3.gif"> <img height="100" alt="swiping-4" src="assets/swiping-4.gif">
 
 
 
