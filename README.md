@@ -35,7 +35,7 @@ Usage Instructions
 [0]: https://arxiv.org/abs/2212.03239
 [1]: ./docs/environment.md
 [2]: ./jupyter-notebooks/camera2perspective.ipynb
-[3]: ./docs/jupyter-notebooks/predict_perspective_fields.ipynb
+[3]: ./jupyter-notebooks/predict_perspective_fields.ipynb
 [4]: README.md
 [5]: README.md
 [6]: README.md
