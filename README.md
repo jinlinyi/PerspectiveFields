@@ -28,15 +28,15 @@ Usage Instructions
 1. [Setup your environment][1]
 2. [Compute perspective fields based on pin-hole camera parameters][2]
 3. [Inference on a single image][3]
-4. [Get camera parameters from Perspective Fields (TODO)][6]
-5. [Train (TODO)][4]
-6. [Test (TODO)][5]
+4. [Get camera parameters from Perspective Fields][4]
+5. [Train (TODO)][5]
+6. [Test (TODO)][6]
 
 [0]: https://arxiv.org/abs/2212.03239
 [1]: ./docs/environment.md
 [2]: ./jupyter-notebooks/camera2perspective.ipynb
 [3]: ./jupyter-notebooks/predict_perspective_fields.ipynb
-[4]: README.md
+[4]: ./jupyter-notebooks/perspective_paramnet.ipynb
 [5]: README.md
 [6]: README.md
 
