@@ -15,11 +15,11 @@ MODEL:
     LOSS_WEIGHT: 1.0
     LOSS_TYPE: 'regression'
   PARAM_DECODER:
-    NAME: 'ParamNetConvNextRegress'
+    NAME: 'ParamNet'
     LOSS_TYPE: 'regression'
     PREDICT_PARAMS: ['roll', 'pitch', 'vfov']
     INPUT_SIZE: 64 
-    LOSS_WEIGHT: 0.1
+    LOSS_WEIGHT: 1.0
 DATASETS:
   TRAIN: ("gsv_train",)
   TEST: ("gsv_val",)
@@ -31,7 +31,8 @@ SOLVER:
   BASE_LR: 0.01
   MAX_ITER: 90000
   CHECKPOINT_PERIOD: 500
-  LR_SCHEDULER_NAME: WarmupCosineLR
+  LR_SCHEDULER_NAME: WarmupMultiStepLR
+  STEPS: (40000, 60000)
 DATALOADER:
   NUM_WORKERS: 8
   AUGMENTATION: True

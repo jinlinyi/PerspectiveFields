@@ -64,7 +64,6 @@ class PerspectiveMapper:
         self.resize         = cfg.DATALOADER.RESIZE
         self.gravity_on     = cfg.MODEL.GRAVITY_ON
         self.latitude_on    = cfg.MODEL.LATITUDE_ON
-        self.height_on      = cfg.MODEL.HEIGHT_ON
         self.center_on      = cfg.MODEL.CENTER_ON
         self.focal_on       = cfg.MODEL.RECOVER_PP
         self.pp_on          = cfg.MODEL.RECOVER_PP
@@ -82,8 +81,6 @@ class PerspectiveMapper:
             self.gravity_transform = GravityTransform(cfg, is_train)
         if self.latitude_on:
             self.latitude_transform = LatitudeTransform(cfg, is_train)
-        if self.height_on:
-            self.height_transform = HeightTransform(cfg, is_train)
 
         self.init_pseudo_uniform_counter()
 
@@ -94,7 +91,6 @@ class PerspectiveMapper:
         self.sampled_general_vfov_count = np.zeros(self.general_vfov_range[2])
         
     def sample_general_vfov(self, max_vfov):
-        
         max_bin_id = self.encode_param_bin(max_vfov, self.general_vfov_range)
         selected_bin = np.random.choice(np.where(np.min(self.sampled_general_vfov_count[:max_bin_id]) == self.sampled_general_vfov_count)[0], 1)[0]
 
@@ -171,11 +167,6 @@ class PerspectiveMapper:
         else:
             gt_absvvp, gt_gfield_original = None, None
  
-        if self.height_on:
-            gt_height, gt_height_original, height_validmap = self.height_transform.get_input_label(dataset_dict)
-        else:
-            gt_height, gt_height_original, height_validmap = None, None, None
-
         if self.pp_on and (not self.is_train or self.overfit_on):
             pp = np.array(dataset_dict['center'])
         else:
@@ -197,11 +188,11 @@ class PerspectiveMapper:
             img, gt_latitude_aug, gt_gfield_aug = self.augmentation_with_up_field(img, gt_latitude_original, gt_gfield_original)
             pp_aug, focal_length_aug = (0,0), 0
         elif self.cfg.DATALOADER.AUGMENTATION_FUN == 'default' or not self.is_train or self.overfit_on:
-            img, gt_latitude_aug, gt_absvvp_aug, gt_height_aug, height_validmap_aug, pp_aug, focal_length_aug = self.augmentation(img, gt_latitude_original, gt_absvvp, gt_height, height_validmap, pp, focal_length)
+            img, gt_latitude_aug, gt_absvvp_aug,  pp_aug, focal_length_aug = self.augmentation(img, gt_latitude_original, gt_absvvp, pp, focal_length)
         elif self.cfg.DATALOADER.AUGMENTATION_FUN == 'uniform_vfov_crop_resize':
-            img, gt_latitude_aug, gt_absvvp_aug, gt_height_aug, height_validmap_aug, pp_aug, focal_length_aug = self.uniform_vfov_crop_resize(img, gt_latitude_original, gt_absvvp, gt_height, height_validmap, pp, focal_length)
+            img, gt_latitude_aug, gt_absvvp_aug, pp_aug, focal_length_aug = self.uniform_vfov_crop_resize(img, gt_latitude_original, gt_absvvp, pp, focal_length)
         elif self.cfg.DATALOADER.AUGMENTATION_FUN == 'uniform_rel_f_crop_resize':
-            img, gt_latitude_aug, gt_absvvp_aug, gt_height_aug, height_validmap_aug, pp_aug, focal_length_aug = self.uniform_rel_f_crop_resize(img, gt_latitude_original, gt_absvvp, gt_height, height_validmap, pp, focal_length)
+            img, gt_latitude_aug, gt_absvvp_aug, pp_aug, focal_length_aug = self.uniform_rel_f_crop_resize(img, gt_latitude_original, gt_absvvp, pp, focal_length)
         else:
             raise NotImplementedError
         rel_focal = focal_length_aug / img.shape[0] if self.focal_on else None
@@ -216,9 +207,6 @@ class PerspectiveMapper:
 
         if self.latitude_on:
             dataset_dict['gt_latitude'] = self.latitude_transform.to_tensor(gt_latitude_aug)
-
-        if self.height_on:
-            dataset_dict['gt_height'], dataset_dict['height_validmap'] = self.height_transform.to_tensor(gt_height_aug, height_validmap_aug)
 
         img = torch.as_tensor(img.transpose(2, 0, 1).astype("float32"))
         dataset_dict['image'] = img
@@ -239,10 +227,6 @@ class PerspectiveMapper:
                 gt_latitude_original = torch.as_tensor(gt_latitude_original.astype("float32"))
                 dataset_dict['gt_latitude_original'] = gt_latitude_original
                 dataset_dict['gt_latitude_original_mode'] = gt_latitude_original_mode
-                
-            if self.height_on:
-                gt_height_original = torch.as_tensor(gt_height_original.astype("float32"))
-                dataset_dict['gt_height_original'] = gt_height_original
         
         return dataset_dict
 
@@ -290,48 +274,28 @@ class PerspectiveMapper:
         
 
 
-    def augmentation(self, img, latimap, absvvp, heightmap, height_validmap, pp, focal_length):
-        # im_w, im_h, _ = img.shape
-        # absvvp_center = absvvp[:2] - np.array([im_w / 2 - 0.5, im_h / 2 - 0.5]) if absvvp is not None else None
-        # transformed = self.aug(
-        #     image=img, 
-        #     latimap=latimap if latimap is not None else np.ones_like(img),
-        #     keypoints=[tuple(absvvp_center)] if absvvp is not None else [(0,0)],
-        #     heightmap=heightmap if heightmap is not None else np.zeros_like(img),
-        #     height_validmap=height_validmap if height_validmap is not None else np.zeros_like(img),
-        # )
-        # img_aug = transformed['image']
-        # im_h_aug, im_w_aug, _ = img_aug.shape
-        # latimap_aug = transformed['latimap'] if latimap is not None else None
-        # absvvp_aug = np.array([transformed['keypoints'][0][0], transformed['keypoints'][0][1], absvvp[2]]) + np.array([im_w_aug / 2 - 0.5, im_h_aug / 2 - 0.5, 0]) if absvvp is not None else None
-        # heightmap_aug = transformed['heightmap'] if heightmap is not None else None
-        # height_validmap_aug = transformed['height_validmap'] if height_validmap is not None else None
-        # return img_aug, latimap_aug, absvvp_aug, heightmap_aug, height_validmap_aug
+    def augmentation(self, img, latimap, absvvp, pp, focal_length):
         h, w, _ = img.shape
         transformed = self.aug(
             image=img, 
             latimap=latimap if latimap is not None else np.ones_like(img),
             keypoints=[tuple(absvvp[:2])] if absvvp is not None else [(0,0)],
-            heightmap=heightmap if heightmap is not None else np.zeros_like(img),
-            height_validmap=height_validmap if height_validmap is not None else np.zeros_like(img),
             pp=[tuple(pp)], # x, y
             corner=[(0, 0), (w, 0), (0, h), (w, h)],
         )
         img_aug = transformed['image']
         latimap_aug = transformed['latimap'] if latimap is not None else None
         absvvp_aug = np.array([transformed['keypoints'][0][0], transformed['keypoints'][0][1], absvvp[2]]) if absvvp is not None else None
-        heightmap_aug = transformed['heightmap'] if heightmap is not None else None
-        height_validmap_aug = transformed['height_validmap'] if height_validmap is not None else None
         pp_aug = np.array(transformed['pp'][0]) # [cx, cy]
         if focal_length is not None:
             transformed['corner'] = np.array(transformed['corner'])
             focal_length_aug = focal_length * (transformed['corner'][2] - transformed['corner'][0])[1] / h
         else:
             focal_length_aug = None
-        return img_aug, latimap_aug, absvvp_aug, heightmap_aug, height_validmap_aug, pp_aug, focal_length_aug
+        return img_aug, latimap_aug, absvvp_aug, pp_aug, focal_length_aug
         
 
-    def uniform_vfov_crop_resize(self, image, latimap, absvvp, heightmap, height_validmap, pp, focal_length):
+    def uniform_vfov_crop_resize(self, image, latimap, absvvp, pp, focal_length):
         image = self.color_aug(image=image)['image']
         H, W, _ = image.shape
         assert H == W
@@ -354,8 +318,6 @@ class PerspectiveMapper:
             'image': image[y:y+max_crop_size, x:x+max_crop_size, :],
             'latimap': latimap[y:y+max_crop_size, x:x+max_crop_size] if latimap is not None else None,
             'absvvp': np.array(absvvp) - np.array([x, y, 0]) if absvvp is not None else np.array([0,0,0]),
-            'heightmap': heightmap[y:y+max_crop_size, x:x+max_crop_size]  if heightmap is not None else None,
-            'height_validmap': height_validmap[y:y+max_crop_size, x:x+max_crop_size] if height_validmap is not None else None,
             'pp': np.array(pp) - np.array([x, y]),
             'focal_length': focal_length,
         }
@@ -365,13 +327,11 @@ class PerspectiveMapper:
         img_aug = cv2.resize(transformed['image'], self.resize)
         latimap_aug = cv2.resize(transformed['latimap'], self.resize) if latimap is not None else None
         absvvp_aug = transformed['absvvp'] * np.array([scale_factor, scale_factor, 1])
-        heightmap_aug = cv2.resize(transformed['heightmap'], self.resize)  if heightmap is not None else None
-        height_validmap_aug = cv2.resize(transformed['height_validmap'], self.resize) if height_validmap is not None else None
         pp_aug = transformed['pp'] * scale_factor
         focal_length_aug = transformed['focal_length'] * scale_factor
-        return img_aug, latimap_aug, absvvp_aug, heightmap_aug, height_validmap_aug, pp_aug, focal_length_aug
+        return img_aug, latimap_aug, absvvp_aug, pp_aug, focal_length_aug
 
-    def uniform_rel_f_crop_resize(self, image, latimap, absvvp, heightmap, height_validmap, pp, focal_length):
+    def uniform_rel_f_crop_resize(self, image, latimap, absvvp, pp, focal_length):
         image = self.color_aug(image=image)['image']
         H, W, _ = image.shape
         assert H == W
@@ -395,8 +355,6 @@ class PerspectiveMapper:
             'image': image[y:y+max_crop_size, x:x+max_crop_size, :],
             'latimap': latimap[y:y+max_crop_size, x:x+max_crop_size],
             'absvvp': np.array(absvvp) - np.array([x, y, 0]),
-            'heightmap': heightmap[y:y+max_crop_size, x:x+max_crop_size]  if heightmap is not None else None,
-            'height_validmap': height_validmap[y:y+max_crop_size, x:x+max_crop_size] if height_validmap is not None else None,
             'pp': np.array(pp) - np.array([x, y]),
             'focal_length': focal_length,
         }
@@ -406,11 +364,9 @@ class PerspectiveMapper:
         img_aug = cv2.resize(transformed['image'], self.resize)
         latimap_aug = cv2.resize(transformed['latimap'], self.resize)
         absvvp_aug = transformed['absvvp'] * np.array([scale_factor, scale_factor, 1])
-        heightmap_aug = cv2.resize(transformed['heightmap'], self.resize)  if heightmap is not None else None
-        height_validmap_aug = cv2.resize(transformed['height_validmap'], self.resize) if height_validmap is not None else None
         pp_aug = transformed['pp'] * scale_factor
         focal_length_aug = transformed['focal_length'] * scale_factor
-        return img_aug, latimap_aug, absvvp_aug, heightmap_aug, height_validmap_aug, pp_aug, focal_length_aug
+        return img_aug, latimap_aug, absvvp_aug, pp_aug, focal_length_aug
 
     def init_color_aug(self):
         if self.is_train and not self.overfit_on:
@@ -475,8 +431,6 @@ class PerspectiveMapper:
                     format='xy', remove_invisible=False),
                 additional_targets={
                     'latimap': 'mask',
-                    'heightmap': 'mask',
-                    'height_validmap': 'mask',
                     'pp': 'keypoints',
                     'corner': 'keypoints',
                 }
@@ -489,151 +443,9 @@ class PerspectiveMapper:
                     format='xy', remove_invisible=False),
                 additional_targets={
                     'latimap': 'mask',
-                    'heightmap': 'mask',
-                    'height_validmap': 'mask',
                     'pp': 'keypoints',
                     'corner': 'keypoints',
                 }
             )
 
-
-def vis_surface_normal(normal):
-    
-    normal_vis = (normal + 1.0) / 2.0 * 255.0
-    normal_vis = normal_vis.astype(np.uint8)
-    return normal_vis
-
-
-if __name__=='__main__':
-    from perspective2d.data import tmp_data_dir
-    src_path = '/home/jinlinyi/datasets/gsv_test_crop_uniform.tar'
-    tmp_data_dir.TempSSDPath(src_path, 'gsv_test_crop_uniform', job_dir='log', logging=True)
-    from detectron2.config import get_cfg
-    from perspective2d.config import get_perspective2d_cfg_defaults
-    from detectron2.data import DatasetCatalog
-    import cv2
-    import perspective2d.data
-    from tqdm import tqdm
-    import seaborn as sns
-    import matplotlib.pyplot as plt
-    from panocam import PanoCam
-
-    from perspective2d.utils import decode_bin, draw_vector_field, draw_up_field
-
-    random.seed(2021)
-
-    debug_folder = './debug'
-    os.makedirs(debug_folder, exist_ok=True)
-    # Load cfg
-    cfg = get_cfg()
-    get_perspective2d_cfg_defaults(cfg)
-    cfg.merge_from_file('./configs/recover_rpf/e05_recover_rpgfpp_cls_pretrain.yaml')
-    dataloader = PerspectiveMapper(cfg, is_train=True, dataset_names=cfg.DATASETS.TRAIN)
-    dataset_dicts = DatasetCatalog.get(cfg.DATASETS.TRAIN[0])
-    rel_pps, rel_focals, general_vfovs, original_vfovs, d_lats = [], [], [], [], []
-    for i in tqdm(range(1000)):
-        d = dataloader(dataset_dicts[i])
-        rel_pps.append(d['rel_pp'])
-        rel_focals.append(d['rel_focal'])
-        d_lats.append(torch.rad2deg(torch.arcsin(d['gt_latitude'][0, 0, 160])) - torch.rad2deg(torch.arcsin(d['gt_latitude'][0, 319, 160])))
-        # d['general_vfov']
-        
-        # import pdb;pdb.set_trace()
-        general_vfovs.append(d['general_vfov'])
-        # original_vfovs.append(d['vfov'])
-        if np.abs(d_lats[-1] - general_vfovs[-1]) > 30:
-            import pdb;pdb.set_trace()
-        # up_general = torch.as_tensor(PanoCam.get_up_general(
-        #     d['rel_focal'], 
-        #     d['image'].shape[2],
-        #     d['image'].shape[1],
-        #     np.radians(d['pitch']),
-        #     np.radians(d['roll']),
-        #     d['rel_cx'],
-        #     d['rel_cy'],
-        # ).transpose(2, 0, 1).astype("float32"))
-        # lat_general = torch.sin(torch.deg2rad(torch.as_tensor(PanoCam.get_lat_general(
-        #     d['rel_focal'], 
-        #     d['image'].shape[2],
-        #     d['image'].shape[1],
-        #     np.radians(d['pitch']),
-        #     np.radians(d['roll']),
-        #     d['rel_cx'],
-        #     d['rel_cy'],
-        # ))))
-
-        # pred = draw_up_field(
-        #     img_rgb=d['image'].numpy().transpose(1,2,0).astype(np.uint8)[:,:,::-1], 
-        #     vector_field=d['gt_gravity'],
-        #     color=(0,1,0)
-        # )
-        # gt = draw_up_field(
-        #     img_rgb=d['image'].numpy().transpose(1,2,0).astype(np.uint8)[:,:,::-1], 
-        #     vector_field=up_general,
-        #     color=(0,1,0)
-        # )
-        # cv2.imwrite("debug_pred.png", pred)
-        # cv2.imwrite("debug_gt.png", gt)
-        # import pdb;pdb.set_trace()
-        # up_err = torch.norm(up_general - d['gt_gravity'])
-        # lat_err = torch.max(torch.abs(torch.rad2deg(torch.arcsin(d['gt_latitude'])) - torch.rad2deg(torch.arcsin(lat_general))))
-        # if lat_err >  1 or up_err > 1:
-        #     import pdb;pdb.set_trace()
-    rel_pps = np.array(rel_pps)
-    rel_focals = np.array(rel_focals)
-    general_vfovs = np.array(general_vfovs)
-    # original_vfovs = np.array(original_vfovs)
-    d_lats = np.array(d_lats)
-
-    sns.distplot(rel_focals, hist = True, kde = True,
-                 kde_kws = {'linewidth': 3})
-    plt.xlabel("Rel_focal")
-    plt.title("Rel_focal from training data")
-    plt.savefig('debug/density_Rel_focal.png')
-    plt.close()
-
-    sns.distplot(rel_pps[:, 0], hist = True, kde = True,
-                 kde_kws = {'linewidth': 3})
-    plt.xlabel("Relative cx w.r.t. image size")
-    plt.title("Principal point location from training data")
-    plt.savefig('debug/density_cx.png')
-    plt.close()
-
-
-    sns.distplot(rel_pps[:, 1], hist = True, kde = True,
-                 kde_kws = {'linewidth': 3})
-    plt.xlabel("Relative cy w.r.t. image size")
-    plt.title("Principal point location from training data")
-    plt.savefig('debug/density_cy.png')
-    plt.close()
-
-    sns.distplot(general_vfovs, hist = True, kde = True,
-                 kde_kws = {'linewidth': 3})
-    plt.xlabel("general_vfov")
-    plt.title("general_vfov from training data")
-    plt.savefig('debug/density_general_vfov.png')
-    plt.close()
-
-    # sns.distplot(original_vfovs, hist = True, kde = True,
-    #              kde_kws = {'linewidth': 3})
-    # plt.xlabel("original_vfovs")
-    # plt.title("original_vfovs from training data")
-    # plt.savefig('debug/density_original_vfovs.png')
-    # plt.close()
-
-    plt.plot(d_lats, general_vfovs, '.')
-    plt.xlabel("$\delta$ lats")
-    plt.ylabel("general_vfovs")
-    plt.title("vfov_vs_dlats")
-    plt.savefig('debug/vfov_vs_dlats.png')
-    plt.close()
-    import pdb;pdb.set_trace()
-        # bin_map = d['gt_gfield']
-        # vector_field = decode_bin(bin_map, cfg.MODEL.GRAVITY_HEAD.NUM_CLASSES)
-        # cv2.imwrite(os.path.join(debug_folder, f'{i}_img.png'), 
-        #         d['image'].numpy().transpose(1,2,0)*255)
-        # zero = torch.zeros((1, vector_field.size(1), vector_field.size(2)))
-        # normalmap = vis_surface_normal(torch.cat((vector_field,zero),0).numpy())
-        # cv2.imwrite(os.path.join(debug_folder, f'{i}_gfield_bined.png'), 
-        # np.array(normalmap).transpose(1,2,0))
         
