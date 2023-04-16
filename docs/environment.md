@@ -9,7 +9,7 @@ conda install -c conda-forge openexr-python openexr
 # Detectron2
 pip install 'git+https://github.com/facebookresearch/detectron2.git'
 # others
-pip install gitpython opencv-contrib-python albumentations pyequilib==0.3.0 skylibs timm mmcv
+pip install gitpython opencv-contrib-python albumentations pyequilib==0.3.0 skylibs timm mmcv h5py tensorboard setuptools==59.5.0
 # install local packages
 cd perspectiveField
 pip install -e .

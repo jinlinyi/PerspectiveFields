@@ -124,7 +124,6 @@ class ParamNet(nn.Module):
                 losses['param/cy-loss'] = loss_itemized[:,4].mean()
                 # losses['param-l2-loss'] = (F.mse_loss(pred, gt, reduction='none') * mask).mean()
             else:
-                print("using l1 loss")
                 losses['param-l1-loss'] = (F.l1_loss(pred, gt, reduction='none') * mask).mean() * self.loss_weight
             
         else:

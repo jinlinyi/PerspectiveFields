@@ -29,7 +29,7 @@ Usage Instructions
 2. [Compute perspective fields based on pin-hole camera parameters][2]
 3. [Inference on a single image][3]
 4. [Get camera parameters from Perspective Fields][4]
-5. [Train (TODO)][5]
+5. [Train PerspectiveNet + ParamNet][5]
 6. [Test (TODO)][6]
 
 [0]: https://arxiv.org/abs/2212.03239
@@ -37,7 +37,7 @@ Usage Instructions
 [2]: ./jupyter-notebooks/camera2perspective.ipynb
 [3]: ./jupyter-notebooks/predict_perspective_fields.ipynb
 [4]: ./jupyter-notebooks/perspective_paramnet.ipynb
-[5]: README.md
+[5]: ./docs/train.md
 [6]: README.md
 
 

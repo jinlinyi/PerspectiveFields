@@ -1,0 +1,38 @@
+MODEL:
+  META_ARCHITECTURE: "PersFormer"
+  BACKBONE:
+    NAME: "build_mit_backbone"
+  GRAVITY_ON: True
+  LATITUDE_ON: True
+  RECOVER_RPF: True
+  RECOVER_PP: False
+  FREEZE:  []
+  WEIGHTS: './init_model_weights/gsv_persnet_pretrain.pth'
+  LATITUDE_DECODER:
+    LOSS_WEIGHT: 1.0
+    LOSS_TYPE: 'regression'
+  GRAVITY_DECODER:
+    LOSS_WEIGHT: 1.0
+    LOSS_TYPE: 'regression'
+  PARAM_DECODER:
+    NAME: 'ParamNetConvNextRegress'
+    LOSS_TYPE: 'regression'
+    PREDICT_PARAMS: ['roll', 'pitch', 'vfov']
+    INPUT_SIZE: 64 
+    LOSS_WEIGHT: 0.1
+DATASETS:
+  TRAIN: ("gsv_train",)
+  TEST: ("gsv_val",)
+OUTPUT_DIR: "./exp/step02-gsv-paramnet-rpf"
+TEST:
+  EVAL_PERIOD: 500
+SOLVER:
+  IMS_PER_BATCH: 32
+  BASE_LR: 0.01
+  MAX_ITER: 90000
+  CHECKPOINT_PERIOD: 500
+  LR_SCHEDULER_NAME: WarmupCosineLR
+DATALOADER:
+  NUM_WORKERS: 8
+  AUGMENTATION: True
+VIS_PERIOD: 500
