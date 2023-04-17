@@ -35,8 +35,9 @@ def general_vfov_to_focal(rel_cx, rel_cy, h, gvfov, degree):
         return cos_FoV - target_cos_FoV
     if degree:
         gvfov = np.radians(gvfov)
-    h = scipy.optimize.fsolve(fun, 1.5, args=(h, rel_cx, rel_cy, np.cos(gvfov)))[0]
-    return h
+    focal = scipy.optimize.fsolve(fun, 1.5, args=(h, rel_cx, rel_cy, np.cos(gvfov)))[0]
+    focal = np.abs(focal)
+    return focal
         
 
 def encode_bin(vector_field, num_bin):
