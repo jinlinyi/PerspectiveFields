@@ -92,7 +92,8 @@ def decode_bin_latitude(binmap, num_classes):
     """
     bin_size = 180 / num_classes
     bin_centers = torch.arange(-90, 90, bin_size) + bin_size / 2
-    latimap = bin_centers[binmap].to(binmap.device)
+    bin_centers = bin_centers.to(binmap.device)
+    latimap = bin_centers[binmap]
     # bin_size = 180 / (num_classes - 1)
     # latimap = (binmap - ((num_classes + 1) / 2 - 1)) * bin_size
     # latimap = latimap - bin_size / 2 * torch.sign(latimap)
