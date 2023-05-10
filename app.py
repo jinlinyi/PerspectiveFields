@@ -5,7 +5,7 @@ import torch
 from PIL import Image, ImageDraw
 from glob import glob
 import numpy as np
-
+import os.path as osp
 from detectron2.config import get_cfg
 from detectron2.data.detection_utils import read_image
 from perspective2d.utils.predictor import VisualizationDemo
@@ -17,11 +17,28 @@ from perspective2d.utils import draw_from_r_p_f_cx_cy
 
 
 title = "Perspective Fields Demo"
+
 description = """
-<Perspective Fields width=200px>
+<p style="text-align: center">
+    <a href="https://jinlinyi.github.io/PerspectiveFields/" target="_blank">Project Page</a> | 
+    <a href="https://arxiv.org/abs/2212.03239" target="_blank">Paper</a> | 
+    <a href="https://github.com/jinlinyi/PerspectiveFields" target="_blank">Code</a> | 
+    <a href="https://www.youtube.com/watch?v=sN5B_ZvMva8&themeRefresh=1" target="_blank">Video</a>
+</p>
+<h2>Gradio Demo</h2>
+<p>Try our Gradio demo for Perspective Fields for single image camera calibration. You can click on one of the provided examples or upload your own image.</p>
+<h3>Available Models:</h3>
+<ol>
+    <li><strong>PersNet-360Cities:</strong> PerspectiveNet trained on the 360Cities dataset. This model predicts perspective fields and is designed to be robust and generalize well to both indoor and outdoor images.</li>
+    <li><strong>PersNet_Paramnet-GSV-uncentered:</strong> A combination of PerspectiveNet and ParamNet trained on the Google Street View (GSV) dataset. This model predicts camera Roll, Pitch, and Field of View (FoV), as well as the Principal Point location.</li>
+    <li><strong>PersNet_Paramnet-GSV-centered:</strong> PerspectiveNet+ParamNet trained on the GSV dataset. This model assumes the principal point is at the center of the image and predicts camera Roll, Pitch, and FoV.</li>
+</ol>
 """
 
-article = "Article Name"
+
+article = """
+<p style='text-align: center'><a href='https://arxiv.org/abs/2212.03239' target='_blank'>Perspective Fields for Single Image Camera Calibrations</a> | <a href='https://github.com/jinlinyi/PerspectiveFields' target='_blank'>Github Repo</a></p>
+"""
 
 def setup_cfg(args):
     cfgs = []
@@ -120,12 +137,9 @@ def inference(img, model_type):
     return Image.fromarray(pred_vis), param
 
 examples = []
-for img_name in glob('../assets/imgs/*.*g'):
+for img_name in glob('assets/imgs/*.*g'):
     examples.append([img_name])
-
-model_map = {
-    "": 'cvpr2023_360',
-}
+print(examples)
 
 model_zoo = {
     'PersNet-360Cities': {
@@ -149,9 +163,18 @@ model_zoo = {
     },
 }
 
+info = """Select model\n"""
 gr.Interface(
     fn=inference,
-    inputs=["image", gr.Radio(list(model_zoo.keys()), value=list(sorted(model_zoo.keys()))[0], label="Model", info="Which model?"),],
+    inputs=[
+        "image", 
+        gr.Radio(
+            list(model_zoo.keys()), 
+            value=list(sorted(model_zoo.keys()))[0], 
+            label="Model", 
+            info=info,
+        ),
+    ],
     outputs=[gr.Image(label='Perspective Fields'), gr.Textbox(label='Pred Camera Parameters')],
     title=title,
     description=description,
