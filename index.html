@@ -10,9 +10,15 @@
     <!-- webpage template-->
     <link rel="stylesheet" href="website.css">
     <link rel="stylesheet" href="slider.css">
-
   </head>
   <body>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+      /* Define the font globally */
+      body {
+        font-family: 'Roboto', sans-serif;
+      }
+    </style>
     <br>
     <center>
       <span style="font-size:38px">Perspective Fields for Single Image Camera Calibration</span>
@@ -74,6 +80,11 @@
       <tr>
         <td align=center width=20%>
           <center>
+            <span style="font-size:20px"><a href="https://huggingface.co/spaces/jinlinyi/PerspectiveFields">[<span style="color:#a00"><b>NEW</b></span>][demo]</a></span>
+          </center>
+        </td>
+        <td align=center width=20%>
+          <center>
             <span style="font-size:20px"><a href="https://arxiv.org/abs/2212.03239">[arXiv]</a></span>
           </center>
         </td>
@@ -115,13 +126,9 @@
 	<div>
 		<center>
 		<p class="abstract">
-			Geometric camera calibration is often required for applications that understand the perspective of the image. 
-      We propose perspective fields as a representation that models the local perspective properties of an image. 
-      Perspective Fields contain per-pixel information about the camera view, parameterized as an up vector and a latitude value. 
-      This representation has a number of advantages as it makes minimal assumptions about the camera model and is invariant or equivariant 
-      to common image editing operations like cropping, warping, and rotation. It is also more interpretable and aligned with human perception. 
-      We train a neural network to predict Perspective Fields and the predicted Perspective Fields can be converted to calibration parameters easily. 
-      We demonstrate the robustness of our approach under various scenarios compared with camera calibration-based methods and show example applications in image compositing.
+
+      Geometric camera calibration is essential for applications that require understanding image perspective. 
+      We introduce Perspective Fields, a representation modeling local perspective properties using per-pixel information about the camera view, parameterized by an up vector and latitude value. This approach offers several benefits, such as minimal assumptions about the camera model, invariance or equivariance to common image editing operations, and improved interpretability aligned with human perception. We train a neural network to predict Perspective Fields, which can be easily converted to calibration parameters. Our method outperforms camera calibration-based approaches in various scenarios and is demonstrated in image compositing applications.
 		</p>
 		</center>
   </div>
@@ -179,7 +186,9 @@
       <div class='slider-button'></div>
     </div> -->
   </p>
-  <p class="definition">
+  <center>
+
+  <p class="abstract">
     For each pixel location, the Perspective Field consists of a unit <b><i>Up-vector</i></b> and <b><i>Latitude</i></b>. 
     The <b><i>Up-vector</i></b> is the projection of the up direction, shown in <span style="color:#41B254"><b>Green</b></span> arrows.
     In perspective projection, it points to the vertical vanishing point. 
@@ -187,6 +196,8 @@
     We show it using contour line: -&pi;/2 <img src="resources/seismic.png" width="5%"></img> &pi;/2. Note 0&deg; is at the horizon.
     
   </p>
+
+  </center>
 </div>
 
 <script>
@@ -212,16 +223,49 @@ function showVal(){
   // document.getElementById("img_blend").url = "output/blend_roll" + valRoll + "_pitch" + valPitch + "_vfov" + valFoV + ".png";
   // document.getElementById("img_original").url = "output/raw_roll" + valRoll + "_pitch" + valPitch + "_vfov" + valFoV + ".png";
 }
+
 </script>
 <hr>
+<center>
+    <h1>Interactive Demo</h1>
+</center>
+<center>
+<p class="abstract">
+Experience our Gradio demo for Perspective Fields and camera parameter prediction. 
+Choose from uncurated examples or upload your own image.
+Keep in mind that it runs on a CPU, resulting in slower performance. For faster inference, please clone our code and run it on a GPU.
+</p>
+</center>
+
+
+<script type="module"
+src="https://gradio.s3-us-west-2.amazonaws.com/3.29.0/gradio.js">
+</script> 
+<center>
+  <gradio-app src="https://jinlinyi-perspectivefields-web-embed.hf.space" info="false" theme_mode="light" frameborder="0"></gradio-app>
+  <!-- <iframe
+	src="https://jinlinyi-perspectivefields-web-embed.hf.space"
+	frameborder="0"
+  info="false" 
+  theme_mode="light" 
+	width=100%
+	height=800
+></iframe> -->
+
+</center>
+<hr>
+
 <center>
     <h1>Qualitative Results</h1>
 </center>
 
-<p>
-  We can train a neural network to predict Perspective Fields from images in the wild. Below are some examples.
-  
-</p>
+
+<center>
+  <p class="abstract">
+    We can train a neural network to predict Perspective Fields from images in the wild. Below are some examples.
+  </p>
+</center>
+
 <center>
 <table align=center width=80%>
   <tr>
@@ -733,11 +777,12 @@ function showVal(){
 </div>
 </center>
 
-<p>
-  Moreover, it generalizes to non-perspective projections, such as the multi-perspective scene from Inception or artworks with various camera models.
-</p>
-
-<table align=center width=100%>
+<center>
+  <p class="abstract">
+    Moreover, it generalizes to non-perspective projections, such as the multi-perspective scene from Inception or artworks with various camera models.
+  </p>
+</center>
+<table align=center width=80%>
   <tr>
     <td>
       <center>
