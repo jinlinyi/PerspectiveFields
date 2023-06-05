@@ -28,7 +28,7 @@ class GravityTransform:
 
         
     def get_input_label(self, dataset_dict):
-        if dataset_dict['dataset'] in ['cities360', 'rgbdpano', 'sun360', 'tartanair', 'stanford2d3d', 'objectron', 'gsv']:
+        if dataset_dict['dataset'] in ['cities360', 'rgbdpano', 'sun360', 'tartanair', 'stanford2d3d', 'objectron', 'gsv', 'edina']:
             r = dataset_dict['roll']
             p = dataset_dict['pitch']
             f = dataset_dict['vfov']
@@ -58,7 +58,7 @@ class GravityTransform:
             'sun360_warp', 'sun360_crop', 'sun360_uncrop', 
             'tartanair_warp', 'tartanair_crop', 
             'stanford2d3d_warp', 'stanford2d3d_crop', 
-            'objectron_crop', 'objectron_crop_mask', 'gsv_crop']:
+            'objectron_crop', 'objectron_crop_mask', 'gsv_crop', 'edina_crop']:
             absvvp = dataset_dict['vvp_abs']
         elif dataset_dict['dataset'] in ['coco-pseudo']:
             pass

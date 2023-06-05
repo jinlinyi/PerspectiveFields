@@ -4,7 +4,6 @@
 *.so
 *.pyc
 *.egg-info/
-datasets/
 *.pth
 */.ipynb_checkpoints/*
 .ipynb_checkpoints/
