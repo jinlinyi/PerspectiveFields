@@ -36,12 +36,7 @@ def load_cities360_json(json_file, img_root):
         summary['data'][idx]['dataset'] = 'cities360'
     logger.info(f"{os.path.basename(json_file)}: {len(summary['data'])}")
     return summary['data']
-    # if not 'train' in os.path.basename(json_file):
-    #     np.random.seed(2021)
-    #     sample_data = np.random.choice(summary['data'], 300, replace=False)
-    #     return sample_data
-    # else:
-    #     return summary['data']
+    
 def load_cities360_distort_json(json_file, img_root):
     with open(json_file, 'r') as f:
         summary = json.load(f)
