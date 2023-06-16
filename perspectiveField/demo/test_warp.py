@@ -26,7 +26,7 @@ from detectron2.data import (
 )
 from detectron2.data.common import MapDataset
 
-# from predictor import VisualizationDemo
+from perspective2d.utils.predictor import VisualizationDemo
 import perspective2d.modeling  # noqa
 from perspective2d.config import get_perspective2d_cfg_defaults
 from perspective2d.data import PerspectiveMapper
@@ -34,7 +34,6 @@ from perspective2d.data import PerspectiveMapper
 from detectron2.utils.visualizer import ColorMode, Visualizer
 from detectron2.engine.defaults import DefaultPredictor
 from detectron2.data import transforms as T
-# from panocam import PanoCam
 
 # constants
 WINDOW_NAME = "COCO detections"
@@ -257,134 +256,6 @@ class dataset_list(MapDataset):
     def __len__(self):
         return len(self.dataloaders[0])
 
-def to_numpy(x):
-    if isinstance(x, np.ndarray):
-        return x
-    elif isinstance(x, torch.Tensor):
-        if x.is_cuda:
-            return x.detach().cpu().numpy()
-        else:
-            return x.detach().numpy()
-    else:
-        return np.array(x)
-
-
-class VisualizationDemo(object):
-    def __init__(self, cfg=None, cfg_list=None, instance_mode=ColorMode.IMAGE, parallel=False):
-        """
-        Args:
-            cfg (CfgNode):
-            instance_mode (ColorMode):
-            parallel (bool): whether to run the model in different processes from visualization.
-                Useful since the visualization logic can be slow.
-        """
-        self.cpu_device = torch.device("cpu")
-        self.instance_mode = instance_mode
-
-        if cfg is not None:
-            self.multi_cfg = False
-            self.parallel = parallel
-            self.predictor = DefaultPredictor(cfg)
-            self.predictor.aug = T.Resize(cfg.DATALOADER.RESIZE)
-            self.gravity_on = cfg.MODEL.GRAVITY_ON
-            self.center_on = cfg.MODEL.CENTER_ON
-            self.latitude_on = cfg.MODEL.LATITUDE_ON
-            self.device = self.predictor.model.device
-        elif cfg_list is not None:
-            self.multi_cfg = True
-            self.predictors = [DefaultPredictor(cfg_tmp) for cfg_tmp in cfg_list]
-            print("# of models", len(self.predictors))
-            self.gravity_on = any([cfg_tmp.MODEL.GRAVITY_ON for cfg_tmp in cfg_list])
-            self.latitude_on = any([cfg_tmp.MODEL.LATITUDE_ON for cfg_tmp in cfg_list])
-            for i in range(len(cfg_list)):
-                self.predictors[i].aug = T.Resize(cfg_list[i].DATALOADER.RESIZE)    
-            self.device = self.predictors[0].model.device
-
-        else:
-            raise NotImplementedError
-
-    def run_on_image(self, image):
-        """
-        Args:
-            image (np.ndarray): an image of shape (H, W, C) (in BGR order).
-                This is the format used by OpenCV.
-
-        Returns:
-            predictions (dict): the output of the model.
-            vis_output (VisImage): the visualized image output.
-        """
-        
-        if self.multi_cfg:
-            predictions = {}
-            for predictor in self.predictors:
-                predictions.update(predictor(image.copy()))
-        else:
-            predictions = self.predictor(image.copy())
-        return predictions
-
-    def opt_rpfpp(self, predictions, device, net_init, pp_on):
-        if not pp_on:
-            predictions['pred_rel_cx'] = predictions['pred_rel_cy'] = 0
-
-        if net_init:
-            init_params = {
-                'roll': to_numpy(predictions['pred_roll']),
-                'pitch': to_numpy(predictions['pred_pitch']),
-                'focal': general_vfov_to_focal(
-                        to_numpy(predictions['pred_rel_cx']), 
-                        to_numpy(predictions['pred_rel_cy']), 
-                        1, 
-                        to_numpy(predictions['pred_general_vfov']), 
-                        degree=True,
-                    ),
-                'cx': to_numpy(predictions['pred_rel_cx']),
-                'cy': to_numpy(predictions['pred_rel_cy']),
-            }
-        else:
-            init_params = None
-
-        rpfpp = predict_rpfpp(
-            up=to_numpy(predictions['pred_gravity_original']), 
-            latimap=to_numpy(torch.deg2rad(predictions['pred_latitude_original'])),
-            tolerance=1e-7,
-            device=device,
-            init_params=init_params,
-            pp_on=pp_on,
-        )
-        return rpfpp
-        
-
-    def draw(self, image, latimap, gravity, latimap_format='', info=None, up_color=(0,1,0),
-        alpha_contourf=0.4, 
-        alpha_contour=0.9):
-        vis_output = None
-        visualizer = None
-
-        # BGR 2 RGB
-        img = image[:,:,::-1]
-        if self.latitude_on:
-            latimap = latimap.to(self.cpu_device).numpy()
-            if latimap_format == 'sin':
-                latimap = np.arcsin(latimap)
-            elif latimap_format == 'deg':
-                latimap = np.radians(latimap)
-            elif latimap_format == 'rad':
-                pass
-            else:
-                print(latimap_format)
-                raise NotImplementedError
-            img = draw_latitude_field(img, latimap, alpha_contourf=alpha_contourf, alpha_contour=alpha_contour)   
-        if self.gravity_on:   
-            img = draw_up_field(img, to_numpy(gravity).transpose(1,2,0), color=up_color)
-             
-        visualizer = VisualizerPerspective(img.copy())
-            
-        if info is not None:
-            visualizer.draw_text(info, (5, 5), horizontal_alignment='left')
-        vis_output = visualizer.output
-        
-
-        return vis_output
 
 
 if __name__ == "__main__":
@@ -399,19 +270,14 @@ if __name__ == "__main__":
     demo = VisualizationDemo(cfg_list=cfg_list)
 
     cfg = cfg_list[0]
-    # dataloader2 = build_detection_test_loader(
-    #     cfg, args.dataset, mapper=PerspectiveMapper(cfg, False, dataset_names=(args.dataset,))
-    # )
     dataloader = dataset_list(cfg_list, args.dataset)
     return_dict = {}
     
     np.random.seed(2022)
     idx_list = np.arange(len(dataloader))
-    # idx_list = np.random.choice(np.arange(len(dataloader)), 20, replace=False)
-    # idx_list = [1384]
+
     eval_by_list(cfg, demo, dataloader, idx_list, return_dict)
-    # return_dict = multiprocess_by_list(cfg, demo, dataloader.dataset, np.arange(len(dataloader.dataset)), 10)
-    # return_dict = multiprocess_by_list(cfg, demo, dataloader, idx_list, 10)
+    
     up_errs, lati_errs = [], []
     for idx in return_dict.keys():
         up_errs.append(return_dict[idx]['avg_up_err_deg'])
@@ -430,7 +296,7 @@ if __name__ == "__main__":
         np.average(up_errs), np.median(up_errs), percent_up,
         np.average(lati_errs), np.median(lati_errs), percent_lati,
     ))
-    # import pdb;pdb.set_trace()
+    
     with open(os.path.join(args.output, f'{args.expname}-{args.dataset}.pickle'), 'wb') as f:
         pickle.dump(return_dict, f)
     

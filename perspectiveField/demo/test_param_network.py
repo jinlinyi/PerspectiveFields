@@ -28,6 +28,7 @@ import perspective2d.modeling  # noqa
 from perspective2d.config import get_perspective2d_cfg_defaults
 from perspective2d.data import PerspectiveMapper
 from perspective2d.utils import general_vfov_to_focal
+from perspective2d.utils.predictor import VisualizationDemo
 
 from perspective2d.panocam import PanoCam
 from collections import defaultdict
@@ -39,134 +40,6 @@ from detectron2.data import transforms as T
 
 # constants
 WINDOW_NAME = "COCO detections"
-
-def to_numpy(x):
-    if isinstance(x, np.ndarray):
-        return x
-    elif isinstance(x, torch.Tensor):
-        if x.is_cuda:
-            return x.detach().cpu().numpy()
-        else:
-            return x.detach().numpy()
-    else:
-        return np.array(x)
-
-class VisualizationDemo(object):
-    def __init__(self, cfg=None, cfg_list=None, instance_mode=ColorMode.IMAGE, parallel=False):
-        """
-        Args:
-            cfg (CfgNode):
-            instance_mode (ColorMode):
-            parallel (bool): whether to run the model in different processes from visualization.
-                Useful since the visualization logic can be slow.
-        """
-        self.cpu_device = torch.device("cpu")
-        self.instance_mode = instance_mode
-
-        if cfg is not None:
-            self.multi_cfg = False
-            self.parallel = parallel
-            self.predictor = DefaultPredictor(cfg)
-            self.predictor.aug = T.Resize(cfg.DATALOADER.RESIZE)
-            self.gravity_on = cfg.MODEL.GRAVITY_ON
-            self.center_on = cfg.MODEL.CENTER_ON
-            self.latitude_on = cfg.MODEL.LATITUDE_ON
-            self.device = self.predictor.model.device
-        elif cfg_list is not None:
-            self.multi_cfg = True
-            self.predictors = [DefaultPredictor(cfg_tmp) for cfg_tmp in cfg_list]
-            print("# of models", len(self.predictors))
-            self.gravity_on = any([cfg_tmp.MODEL.GRAVITY_ON for cfg_tmp in cfg_list])
-            self.latitude_on = any([cfg_tmp.MODEL.LATITUDE_ON for cfg_tmp in cfg_list])
-            for i in range(len(cfg_list)):
-                self.predictors[i].aug = T.Resize(cfg_list[i].DATALOADER.RESIZE)    
-            self.device = self.predictors[0].model.device
-
-        else:
-            raise NotImplementedError
-
-    def run_on_image(self, image):
-        """
-        Args:
-            image (np.ndarray): an image of shape (H, W, C) (in BGR order).
-                This is the format used by OpenCV.
-
-        Returns:
-            predictions (dict): the output of the model.
-            vis_output (VisImage): the visualized image output.
-        """
-        
-        if self.multi_cfg:
-            predictions = {}
-            for predictor in self.predictors:
-                predictions.update(predictor(image.copy()))
-        else:
-            predictions = self.predictor(image.copy())
-        return predictions
-
-    def opt_rpfpp(self, predictions, device, net_init, pp_on):
-        if not pp_on:
-            predictions['pred_rel_cx'] = predictions['pred_rel_cy'] = 0
-
-        if net_init:
-            init_params = {
-                'roll': to_numpy(predictions['pred_roll']),
-                'pitch': to_numpy(predictions['pred_pitch']),
-                'focal': general_vfov_to_focal(
-                        to_numpy(predictions['pred_rel_cx']), 
-                        to_numpy(predictions['pred_rel_cy']), 
-                        1, 
-                        to_numpy(predictions['pred_general_vfov']), 
-                        degree=True,
-                    ),
-                'cx': to_numpy(predictions['pred_rel_cx']),
-                'cy': to_numpy(predictions['pred_rel_cy']),
-            }
-        else:
-            init_params = None
-
-        rpfpp = predict_rpfpp(
-            up=to_numpy(predictions['pred_gravity_original']), 
-            latimap=to_numpy(torch.deg2rad(predictions['pred_latitude_original'])),
-            tolerance=1e-7,
-            device=device,
-            init_params=init_params,
-            pp_on=pp_on,
-        )
-        return rpfpp
-        
-
-    def draw(self, image, latimap, gravity, latimap_format='', info=None, up_color=(0,1,0),
-        alpha_contourf=0.4, 
-        alpha_contour=0.9):
-        vis_output = None
-        visualizer = None
-
-        # BGR 2 RGB
-        img = image[:,:,::-1]
-        if self.latitude_on:
-            latimap = latimap.to(self.cpu_device).numpy()
-            if latimap_format == 'sin':
-                latimap = np.arcsin(latimap)
-            elif latimap_format == 'deg':
-                latimap = np.radians(latimap)
-            elif latimap_format == 'rad':
-                pass
-            else:
-                print(latimap_format)
-                raise NotImplementedError
-            img = draw_latitude_field(img, latimap, alpha_contourf=alpha_contourf, alpha_contour=alpha_contour)   
-        if self.gravity_on:   
-            img = draw_up_field(img, to_numpy(gravity).transpose(1,2,0), color=up_color)
-             
-        visualizer = VisualizerPerspective(img.copy())
-            
-        if info is not None:
-            visualizer.draw_text(info, (5, 5), horizontal_alignment='left')
-        vis_output = visualizer.output
-        
-
-        return vis_output
 
 
 def setup_cfg_dataloader(args):
@@ -325,45 +198,55 @@ def eval_by_idx(cfg, demo, dataset, idx):
     img_path = dataset[idx]['file_name']
     img = read_image(img_path, format=cfg.INPUT.FORMAT)
     predictions = demo.run_on_image(img)
-    # breakpoint()
-#####
-    if False:
-        print("override predictions!")
-        predictions['pred_general_vfov'] = predictions['pred_vfov']
-        predictions['pred_rel_cx'] = predictions['pred_vfov'] * 0
-        predictions['pred_rel_cy'] = predictions['pred_vfov'] * 0
-#####
+    
     rtn = {}
     for key in cfg.MODEL.PARAM_DECODER.PREDICT_PARAMS:
         rtn[key] = {
             'pred': predictions['pred_'+key].cpu().item(), 
             'gt': dataset[idx][key]
         }
-    predictions['pred_rel_focal'] = general_vfov_to_focal(
-        predictions['pred_rel_cx'].cpu().item(),
-        predictions['pred_rel_cy'].cpu().item(),
-        1, 
-        predictions['pred_general_vfov'].cpu().item(),
-        degree=True,
-    )
-    up_param = torch.as_tensor(PanoCam.get_up_general(
-        focal_rel=predictions['pred_rel_focal'],
-        im_w=img.shape[1],
-        im_h=img.shape[0],
-        elevation=np.radians(predictions['pred_pitch'].cpu().item()),
-        roll=np.radians(predictions['pred_roll'].cpu().item()),
-        cx_rel=predictions['pred_rel_cx'].cpu().item(),
-        cy_rel=predictions['pred_rel_cy'].cpu().item(),
-    ).transpose(2,0,1))
-    lat_param = torch.as_tensor(PanoCam.get_lat_general(
-        focal_rel=predictions['pred_rel_focal'],
-        im_w=img.shape[1],
-        im_h=img.shape[0],
-        elevation=np.radians(predictions['pred_pitch'].cpu().item()),
-        roll=np.radians(predictions['pred_roll'].cpu().item()),
-        cx_rel=predictions['pred_rel_cx'].cpu().item(),
-        cy_rel=predictions['pred_rel_cy'].cpu().item(),
-    ))
+
+    if cfg.MODEL.RECOVER_PP:
+        predictions['pred_rel_focal'] = general_vfov_to_focal(
+            predictions['pred_rel_cx'].cpu().item(),
+            predictions['pred_rel_cy'].cpu().item(),
+            1, 
+            predictions['pred_general_vfov'].cpu().item(),
+            degree=True,
+        )
+        up_param = torch.as_tensor(PanoCam.get_up_general(
+            focal_rel=predictions['pred_rel_focal'],
+            im_w=img.shape[1],
+            im_h=img.shape[0],
+            elevation=np.radians(predictions['pred_pitch'].cpu().item()),
+            roll=np.radians(predictions['pred_roll'].cpu().item()),
+            cx_rel=predictions['pred_rel_cx'].cpu().item(),
+            cy_rel=predictions['pred_rel_cy'].cpu().item(),
+        ).transpose(2,0,1))
+        lat_param = torch.as_tensor(PanoCam.get_lat_general(
+            focal_rel=predictions['pred_rel_focal'],
+            im_w=img.shape[1],
+            im_h=img.shape[0],
+            elevation=np.radians(predictions['pred_pitch'].cpu().item()),
+            roll=np.radians(predictions['pred_roll'].cpu().item()),
+            cx_rel=predictions['pred_rel_cx'].cpu().item(),
+            cy_rel=predictions['pred_rel_cy'].cpu().item(),
+        ))
+    else:
+        up_param = torch.as_tensor(PanoCam.get_up(
+            vfov=np.radians(predictions['pred_vfov'].cpu().item()),
+            im_w=img.shape[1],
+            im_h=img.shape[0],
+            elevation=np.radians(predictions['pred_pitch'].cpu().item()),
+            roll=np.radians(predictions['pred_roll'].cpu().item())
+        ).transpose(2,0,1))
+        lat_param = torch.as_tensor(PanoCam.get_lat(
+            vfov=np.radians(predictions['pred_vfov'].cpu().item()),
+            im_w=img.shape[1],
+            im_h=img.shape[0],
+            elevation=np.radians(predictions['pred_pitch'].cpu().item()),
+            roll=np.radians(predictions['pred_roll'].cpu().item())
+        ))
 
     if 'mask_on' in dataset[idx].keys() and dataset[idx]['mask_on']:
         mask = mask_util.decode(dataset[idx]['mask']).astype(bool)
@@ -392,29 +275,7 @@ def eval_by_idx(cfg, demo, dataset, idx):
         'perc_up_err_less_5': perc_up_err_less_5, 
         'perc_lati_err_less_5': perc_lati_err_less_5, 
     })
-    # r_p_f_deg = torch.cat([predictions['pred_roll'], predictions['pred_pitch'], predictions['pred_vfov']]).cpu().numpy()
-    # if 'rot_world_from_cam' in dataset[idx].keys():
-    #     (roll, pitch) = get_r_p_from_rotation(np.array([0.0, 0.0, 1.0]), np.array(dataset[idx]['rot_world_from_cam']))
-    #     intWidth = 1024 
-    #     intHeight = 768 
-    #     fov_x         = np.pi/3.0
-    #     fov_y         = 2.0 * np.arctan(intHeight * np.tan(fov_x/2.0) / intWidth)
-    #     r_p_f_gt = np.array([
-    #         roll, pitch, fov_y,
-    #     ])
-    #     r_p_f_gt = np.degrees(r_p_f_gt)
-    # else:
-    #     r_p_f_gt = np.array([
-    #         dataset[idx]['roll'],
-    #         dataset[idx]['pitch'],
-    #         dataset[idx]['vfov'],
-    #     ])
-    # rtn = {
-    #     'err': np.abs(r_p_f_deg - r_p_f_gt),
-    #     'pred': r_p_f_deg,
-    #     'gt': r_p_f_gt,
-    # }
-    # save_vis(demo, img, predictions, dataset[idx], idx, rtn, output_folder='/home/code-base/user_space/public_html/e15_optimize/v05_e07_up_v3_e09_lati_v3_modelcls_sun360_kldiv')
+
     return rtn
 
 
@@ -503,19 +364,15 @@ if __name__ == "__main__":
     demo = VisualizationDemo(cfg_list=cfg_list_model)
 
     cfg = cfg_list_dataloader[0]
-    # dataloader2 = build_detection_test_loader(
-    #     cfg, args.dataset, mapper=PerspectiveMapper(cfg, False, dataset_names=(args.dataset,))
-    # )
+    
     dataloader = dataset_list(cfg_list_dataloader, args.dataset)
     return_dict = {}
     
     np.random.seed(2022)
     idx_list = np.arange(len(dataloader))
-    # idx_list = np.random.choice(np.arange(len(dataloader)), 200, replace=False)
-    # idx_list = [1384]
+  
     eval_by_list(cfg, demo, dataloader, idx_list, return_dict)
-    # return_dict = multiprocess_by_list(cfg, demo, dataloader, np.arange(len(dataloader)), 10)
-    # return_dict = multiprocess_by_list(cfg, demo, dataloader, idx_list, 10)
+    
     errs = defaultdict(list)
     for key in cfg.MODEL.PARAM_DECODER.PREDICT_PARAMS:
         for idx in return_dict.keys():
@@ -549,5 +406,3 @@ if __name__ == "__main__":
         np.median(up_errs), percent_up,
         np.median(lati_errs), percent_lati,
     ))
-    breakpoint()
-
