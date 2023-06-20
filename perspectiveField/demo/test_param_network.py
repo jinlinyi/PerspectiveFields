@@ -30,7 +30,7 @@ from perspective2d.data import PerspectiveMapper
 from perspective2d.utils import general_vfov_to_focal
 from perspective2d.utils.predictor import VisualizationDemo
 
-from perspective2d.panocam import PanoCam
+from perspective2d.utils import PanoCam
 from collections import defaultdict
 
 from detectron2.utils.visualizer import ColorMode, Visualizer
