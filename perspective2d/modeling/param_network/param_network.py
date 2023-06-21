@@ -83,6 +83,7 @@ class ParamNet(nn.Module):
                     'pred_roll': x[:,0] * 90.0,
                     'pred_pitch': x[:,1] * 90.0,
                     'pred_vfov': x[:,2] * 90.0,
+                    'pred_rel_focal': 1 / 2 / torch.tan(x[:,2]), 
                 }
                 
             return param
