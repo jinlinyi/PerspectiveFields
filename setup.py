@@ -15,7 +15,6 @@ setup(
         "pyequilib==0.3.0",
         "skylibs",
         "timm",
-        "mmcv",
         "h5py",
         "tensorboard",
         "setuptools==59.5.0",
