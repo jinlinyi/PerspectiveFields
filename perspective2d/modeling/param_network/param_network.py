@@ -19,6 +19,7 @@ from detectron2.utils.events import get_event_storage
 from ..persformer_heads import build_persformer_heads
 from ..backbone import build_mit_backbone, LowLevelEncoder, ConvNeXt
 from perspective2d.modeling.persformer_heads import BaseDecodeHead
+from perspective2d.utils import general_vfov_to_focal
 
 from ..persformer_heads.decode_head import MLP, FeatureFusionBlock
 from mmcv.cnn import ConvModule
@@ -31,6 +32,19 @@ PARAM_NET_REGISTRY = Registry("PARAM_NET")
 def build_param_net(cfg):
     name = cfg.MODEL.PARAM_DECODER.NAME
     return PARAM_NET_REGISTRY.get(name)(cfg)
+
+
+def to_numpy(x):
+    if isinstance(x, np.ndarray):
+        return x
+    elif isinstance(x, torch.Tensor):
+        if x.is_cuda:
+            return x.detach().cpu().numpy()
+        else:
+            return x.detach().numpy()
+    else:
+        return np.array(x)
+
 
 @PARAM_NET_REGISTRY.register()
 class ParamNet(nn.Module):
@@ -187,25 +201,6 @@ class ParamNetConvNextRegress(nn.Module):
 
 
     def forward(self, predictions, batched_inputs=None):
-        """
-        Args:
-            batched_inputs: a list, batched outputs of :class:`DatasetMapper`.
-                Each item in the list contains the inputs for one image.
-                For now, each item in the list is a dict that contains:
-                   * "image": Tensor, image in (C, H, W) format.
-                   * "sem_seg": semantic segmentation ground truth
-                   * Other information that's included in the original dicts, such as:
-                     "height", "width" (int): the output resolution of the model (may be different
-                     from input resolution), used in inference.
-        Returns:
-            list[dict]:
-              Each dict is the output for one input image.
-              The dict contains one key "sem_seg" whose value is a
-              Tensor that represents the
-              per-pixel segmentation prediced by the head.
-              The prediction has shape KxHxW that represents the logits of
-              each class for each pixel.
-        """
         images = torch.cat((predictions["pred_gravity"], predictions["pred_latitude"]), dim=1)
         images = F.interpolate(images, (self.input_size, self.input_size))
         
@@ -215,6 +210,20 @@ class ParamNetConvNextRegress(nn.Module):
             param = {}
             for idx, key in enumerate(self.cfg.MODEL.PARAM_DECODER.PREDICT_PARAMS):
                 param['pred_' + key] = x[:, idx] * self.factors[key]
+
+            # make output contain everything
+            if 'pred_rel_cx' not in param and 'pred_rel_cy' not in param:
+                param['pred_rel_cx'] = param['pred_rel_cy'] = torch.FloatTensor([0])
+            if 'pred_general_vfov' not in param:
+                param['pred_general_vfov'] = param['pred_vfov']
+            if 'pred_rel_focal' not in param:
+                param['pred_rel_focal'] = torch.FloatTensor([general_vfov_to_focal(
+                    to_numpy(param['pred_rel_cx']), 
+                    to_numpy(param['pred_rel_cy']), 
+                    1, 
+                    to_numpy(param['pred_general_vfov']), 
+                    degree=True,
+                )])
             return param
 
         targets = []

@@ -1,3 +1,10 @@
+
+import os
+# os.system(f"pip install -U openmim")
+# os.system(f"mim install mmcv")
+# os.system(f"pip install git+https://github.com/jinlinyi/PerspectiveFields.git@dev#egg=perspective2d")
+
+
 import gradio as gr
 import cv2
 import copy
@@ -29,7 +36,7 @@ description = """
 <p>Try our Gradio demo for Perspective Fields for single image camera calibration. You can click on one of the provided examples or upload your own image.</p>
 <h3>Available Models:</h3>
 <ol>
-    <li>[NEW!!!]<strong>Paramnet-360Cities-edina:</strong> PerspectiveNet+ParamNet trained on 360cities and edina dataset.</li>
+    <li><span style="color:red;">[NEW!!!]</span><strong>Paramnet-360Cities-edina:</strong> Our latest model trained on <a href="https://www.360cities.net/">360cities</a> and <a href="https://github.com/tien-d/EgoDepthNormal/tree/main#egocentric-depth-on-everyday-indoor-activities-edina-dataset">EDINA</a> dataset.</li>
     <li><strong>PersNet-360Cities:</strong> PerspectiveNet trained on the 360Cities dataset. This model predicts perspective fields and is designed to be robust and generalize well to both indoor and outdoor images.</li>
     <li><strong>PersNet_Paramnet-GSV-uncentered:</strong> A combination of PerspectiveNet and ParamNet trained on the Google Street View (GSV) dataset. This model predicts camera Roll, Pitch, and Field of View (FoV), as well as the Principal Point location.</li>
     <li><strong>PersNet_Paramnet-GSV-centered:</strong> PerspectiveNet+ParamNet trained on the GSV dataset. This model assumes the principal point is at the center of the image and predicts camera Roll, Pitch, and FoV.</li>
@@ -40,6 +47,9 @@ description = """
 article = """
 <p style='text-align: center'><a href='https://arxiv.org/abs/2212.03239' target='_blank'>Perspective Fields for Single Image Camera Calibrations</a> | <a href='https://github.com/jinlinyi/PerspectiveFields' target='_blank'>Github Repo</a></p>
 """
+
+
+
 
 def setup_cfg(args):
     cfgs = []
@@ -88,12 +98,17 @@ def resize_fix_aspect_ratio(img, field, target_width=None, target_height=None):
 
 
 def inference(img, model_type):
+    img_h = img.shape[0]
+    if model_type is None:
+        return None, ""
     perspective_cfg_list = setup_cfg(model_zoo[model_type])
     demo = VisualizationDemo(cfg_list=perspective_cfg_list)
 
     # img = read_image(image_path, format="BGR")
     img = img[..., ::-1] # rgb->bgr
     pred = demo.run_on_image(img)
+    print(pred.keys())
+    print(pred)
     field = {
         'up': pred['pred_gravity_original'].cpu().detach(),
         'lati': pred['pred_latitude_original'].cpu().detach(),
@@ -126,7 +141,7 @@ def inference(img, model_type):
             pred['pred_rel_cx'].cpu().item(),
             pred['pred_rel_cy'].cpu().item(),
         ]
-        param = f"roll {pred['pred_roll'].cpu().item() :.2f}\npitch {pred['pred_pitch'].cpu().item() :.2f}\nfov {pred['pred_general_vfov'].cpu().item() :.2f}\n"
+        param = f"roll {pred['pred_roll'].cpu().item() :.2f}\npitch {pred['pred_pitch'].cpu().item() :.2f}\nvertical fov {pred['pred_general_vfov'].cpu().item() :.2f}\nfocal_length {pred['pred_rel_focal'].cpu().item()*img_h :.2f}\n"
         param += f"principal point {pred['pred_rel_cx'].cpu().item() :.2f} {pred['pred_rel_cy'].cpu().item() :.2f}"
         pred_vis = draw_from_r_p_f_cx_cy(
             img[:,:,::-1], 
@@ -142,42 +157,47 @@ for img_name in glob('assets/imgs/*.*g'):
     examples.append([img_name])
 print(examples)
 
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
 model_zoo = {
-    'Paramnet-360Cities-edina-centered': {
+
+    'NEW:Paramnet-360Cities-edina-centered': {
         'weights': ['https://www.dropbox.com/s/z2dja70bgy007su/paramnet_360cities_edina_rpf.pth'],
-        'opts': ['MODEL.WEIGHTS', 'models/paramnet_360cities_edina_rpf.pth'],
+        'opts': ['MODEL.WEIGHTS', 'models/paramnet_360cities_edina_rpf.pth', 'MODEL.DEVICE', device,],
         'config_file': 'models/paramnet_360cities_edina_rpf.yaml',
         'param': True,
     },
 
-   'Paramnet-360Cities-edina-uncentered': {
+   'NEW:Paramnet-360Cities-edina-uncentered': {
         'weights': ['https://www.dropbox.com/s/nt29e1pi83mm1va/paramnet_360cities_edina_rpfpp.pth'],
-        'opts': ['MODEL.WEIGHTS', 'models/paramnet_360cities_edina_rpfpp.pth'],
+        'opts': ['MODEL.WEIGHTS', 'models/paramnet_360cities_edina_rpfpp.pth', 'MODEL.DEVICE', device,],
         'config_file': 'models/paramnet_360cities_edina_rpfpp.yaml',
         'param': True,
     },
 
     'PersNet-360Cities': {
         'weights': ['https://www.dropbox.com/s/czqrepqe7x70b7y/cvpr2023.pth'],
-        'opts': ['MODEL.WEIGHTS', 'models/cvpr2023.pth'],
+        'opts': ['MODEL.WEIGHTS', 'models/cvpr2023.pth', 'MODEL.DEVICE', device,],
         'config_file': 'models/cvpr2023.yaml',
         'param': False,
     },
     'PersNet_Paramnet-GSV-uncentered': {
         'weights': ['https://www.dropbox.com/s/ufdadxigewakzlz/paramnet_gsv_rpfpp.pth'],
-        'opts': ['MODEL.WEIGHTS', 'models/paramnet_gsv_rpfpp.pth'],
+        'opts': ['MODEL.WEIGHTS', 'models/paramnet_gsv_rpfpp.pth', 'MODEL.DEVICE', device,],
         'config_file': 'models/paramnet_gsv_rpfpp.yaml',
         'param': True,
     },
     # trained on GSV dataset, predicts Perspective Fields + camera parameters (roll, pitch, fov), assuming centered principal point
     'PersNet_Paramnet-GSV-centered': {
         'weights': ['https://www.dropbox.com/s/g6xwbgnkggapyeu/paramnet_gsv_rpf.pth'],
-        'opts': ['MODEL.WEIGHTS', 'models/paramnet_gsv_rpf.pth'],
+        'opts': ['MODEL.WEIGHTS', 'models/paramnet_gsv_rpf.pth', 'MODEL.DEVICE', device,],
         'config_file': 'models/paramnet_gsv_rpf.yaml',
         'param': True,
     },
 }
-
+for model_id in model_zoo:
+    html = model_zoo[model_id]['weights'][0]
+    if not os.path.exists(os.path.join('models', html.split('/')[-1])):
+        os.system(f"wget -P models/ {html}")
 
 info = """Select model\n"""
 gr.Interface(
