@@ -25,7 +25,7 @@ class LatitudeTransform:
             raise NotImplementedError
         
     def get_input_label(self, dataset_dict):
-        if dataset_dict['dataset'] in ['cities360', 'rgbdpano', 'sun360', 'tartanair', 'stanford2d3d', 'objectron', 'gsv']:
+        if dataset_dict['dataset'] in ['cities360', 'rgbdpano', 'sun360', 'tartanair', 'stanford2d3d', 'objectron', 'gsv', 'edina']:
             latimap = PanoCam.get_lat(
                 vfov=np.radians(dataset_dict['vfov']), 
                 im_w=dataset_dict['width'], 
@@ -34,7 +34,7 @@ class LatitudeTransform:
                 roll=np.radians(dataset_dict['roll']),
             )
             latimap = latimap.astype("float32")
-        elif dataset_dict['dataset'] in ['hypersim','sun360_warp', 'sun360_crop', 'sun360_uncrop', 'tartanair_warp', 'tartanair_crop', 'stanford2d3d_warp', 'stanford2d3d_crop', 'objectron_crop', 'objectron_crop_mask', 'gsv_crop', 'cities360_distort']:
+        elif dataset_dict['dataset'] in ['hypersim','sun360_warp', 'sun360_crop', 'sun360_uncrop', 'tartanair_warp', 'tartanair_crop', 'stanford2d3d_warp', 'stanford2d3d_crop', 'objectron_crop', 'objectron_crop_mask', 'gsv_crop', 'cities360_distort', 'edina_crop']:
             latimap = read_hdf5(dataset_dict['latitude_file_name']).astype("float32")
             assert np.allclose(latimap.shape, [dataset_dict['height'], dataset_dict['width']])
         elif dataset_dict['dataset'] in ['coco-pseudo']:

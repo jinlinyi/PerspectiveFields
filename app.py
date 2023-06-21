@@ -29,6 +29,7 @@ description = """
 <p>Try our Gradio demo for Perspective Fields for single image camera calibration. You can click on one of the provided examples or upload your own image.</p>
 <h3>Available Models:</h3>
 <ol>
+    <li>[NEW!!!]<strong>Paramnet-360Cities-edina:</strong> PerspectiveNet+ParamNet trained on 360cities and edina dataset.</li>
     <li><strong>PersNet-360Cities:</strong> PerspectiveNet trained on the 360Cities dataset. This model predicts perspective fields and is designed to be robust and generalize well to both indoor and outdoor images.</li>
     <li><strong>PersNet_Paramnet-GSV-uncentered:</strong> A combination of PerspectiveNet and ParamNet trained on the Google Street View (GSV) dataset. This model predicts camera Roll, Pitch, and Field of View (FoV), as well as the Principal Point location.</li>
     <li><strong>PersNet_Paramnet-GSV-centered:</strong> PerspectiveNet+ParamNet trained on the GSV dataset. This model assumes the principal point is at the center of the image and predicts camera Roll, Pitch, and FoV.</li>
@@ -142,6 +143,20 @@ for img_name in glob('assets/imgs/*.*g'):
 print(examples)
 
 model_zoo = {
+    'Paramnet-360Cities-edina-centered': {
+        'weights': ['https://www.dropbox.com/s/z2dja70bgy007su/paramnet_360cities_edina_rpf.pth'],
+        'opts': ['MODEL.WEIGHTS', 'models/paramnet_360cities_edina_rpf.pth'],
+        'config_file': 'models/paramnet_360cities_edina_rpf.yaml',
+        'param': True,
+    },
+
+   'Paramnet-360Cities-edina-uncentered': {
+        'weights': ['https://www.dropbox.com/s/nt29e1pi83mm1va/paramnet_360cities_edina_rpfpp.pth'],
+        'opts': ['MODEL.WEIGHTS', 'models/paramnet_360cities_edina_rpfpp.pth'],
+        'config_file': 'models/paramnet_360cities_edina_rpfpp.yaml',
+        'param': True,
+    },
+
     'PersNet-360Cities': {
         'weights': ['https://www.dropbox.com/s/czqrepqe7x70b7y/cvpr2023.pth'],
         'opts': ['MODEL.WEIGHTS', 'models/cvpr2023.pth'],
@@ -162,6 +177,7 @@ model_zoo = {
         'param': True,
     },
 }
+
 
 info = """Select model\n"""
 gr.Interface(

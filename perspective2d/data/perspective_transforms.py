@@ -92,7 +92,12 @@ class PerspectiveMapper:
         
     def sample_general_vfov(self, max_vfov):
         max_bin_id = self.encode_param_bin(max_vfov, self.general_vfov_range)
-        selected_bin = np.random.choice(np.where(np.min(self.sampled_general_vfov_count[:max_bin_id]) == self.sampled_general_vfov_count)[0], 1)[0]
+        if max_bin_id == 0:
+            return max_vfov
+        
+        selected_bin = np.random.choice(np.where(
+            np.min(self.sampled_general_vfov_count[:max_bin_id]) == self.sampled_general_vfov_count[:max_bin_id])[0]
+        , 1)[0]
 
         bin_size = (self.general_vfov_range[1] - self.general_vfov_range[0]) / self.general_vfov_range[2]
         self.sampled_general_vfov_count[selected_bin] += 1
@@ -141,7 +146,6 @@ class PerspectiveMapper:
                 2. Transform the image and annotations
                 3. Prepare the annotations to :class:`Instances`
         """
-
         dataset_dict = copy.deepcopy(dataset_dict)
         assert os.path.exists(dataset_dict["file_name"]), dataset_dict["file_name"]
         img = utils.read_image(dataset_dict["file_name"], format=self.img_format)
@@ -183,14 +187,18 @@ class PerspectiveMapper:
                 original_rgb = cv2.imread(original_path)[:,:,::-1]
                 original_rgb_center = np.array(original_rgb.shape[:2][::-1]) / 2
                 dataset_dict['img_center_original'] = cv2.circle(original_rgb.copy(), original_rgb_center.astype(int), radius=10, color=(0, 0, 255), thickness=-1)
-
+        
         if self.cfg.DATALOADER.AUGMENTATION_FUN == 'with_up_field':
             img, gt_latitude_aug, gt_gfield_aug = self.augmentation_with_up_field(img, gt_latitude_original, gt_gfield_original)
             pp_aug, focal_length_aug = (0,0), 0
         elif self.cfg.DATALOADER.AUGMENTATION_FUN == 'default' or not self.is_train or self.overfit_on:
             img, gt_latitude_aug, gt_absvvp_aug,  pp_aug, focal_length_aug = self.augmentation(img, gt_latitude_original, gt_absvvp, pp, focal_length)
         elif self.cfg.DATALOADER.AUGMENTATION_FUN == 'uniform_vfov_crop_resize':
-            img, gt_latitude_aug, gt_absvvp_aug, pp_aug, focal_length_aug = self.uniform_vfov_crop_resize(img, gt_latitude_original, gt_absvvp, pp, focal_length)
+            if self.pp_on:
+                img, gt_latitude_aug, gt_absvvp_aug, pp_aug, focal_length_aug = self.uniform_vfov_crop_resize(img, gt_latitude_original, gt_absvvp, pp, focal_length)
+            else:
+                focal_length = dataset_dict['height'] / 2 / np.tan(np.radians(dataset_dict['vfov'] / 2))
+                img, gt_latitude_aug, gt_absvvp_aug,  pp_aug, focal_length_aug, dataset_dict['vfov'] = self.uniform_vfov_crop_resize(img, gt_latitude_original, gt_absvvp, pp, focal_length)
         elif self.cfg.DATALOADER.AUGMENTATION_FUN == 'uniform_rel_f_crop_resize':
             img, gt_latitude_aug, gt_absvvp_aug, pp_aug, focal_length_aug = self.uniform_rel_f_crop_resize(img, gt_latitude_original, gt_absvvp, pp, focal_length)
         else:
@@ -298,16 +306,19 @@ class PerspectiveMapper:
     def uniform_vfov_crop_resize(self, image, latimap, absvvp, pp, focal_length):
         image = self.color_aug(image=image)['image']
         H, W, _ = image.shape
-        assert H == W
-        rel_cx = np.random.uniform(-0.4, 0.4)
-        rel_cy = np.random.uniform(-0.4, 0.4)
-        original_size = H
+        
+        if self.pp_on:
+            rel_cx = np.random.uniform(-0.4, 0.4)
+            rel_cy = np.random.uniform(-0.4, 0.4) 
+        else:
+            rel_cx = rel_cy = 0.
+        
         crop_size_max = min(W / (1-2*rel_cx), W / (1 + 2*rel_cx), H / (1-2*rel_cy), H / (1 + 2*rel_cy))
         
         max_vfov = general_vfov(rel_cx, rel_cy, 1, focal_length / crop_size_max, degree=True)
         vfov = self.sample_general_vfov(max_vfov)
         h = scipy.optimize.fsolve(fun, crop_size_max, args=(focal_length, rel_cx, rel_cy, np.cos(np.radians(vfov))))[0]
-        h = int(h)
+        h = int(np.abs(h))
         w = h
         cx = rel_cx * w + 0.5 * W
         cy = rel_cy * h + 0.5 * H
@@ -329,7 +340,10 @@ class PerspectiveMapper:
         absvvp_aug = transformed['absvvp'] * np.array([scale_factor, scale_factor, 1])
         pp_aug = transformed['pp'] * scale_factor
         focal_length_aug = transformed['focal_length'] * scale_factor
-        return img_aug, latimap_aug, absvvp_aug, pp_aug, focal_length_aug
+        if self.pp_on:
+            return img_aug, latimap_aug, absvvp_aug, pp_aug, focal_length_aug
+        else:
+            return img_aug, latimap_aug, absvvp_aug, pp_aug, None, vfov
 
     def uniform_rel_f_crop_resize(self, image, latimap, absvvp, pp, focal_length):
         image = self.color_aug(image=image)['image']

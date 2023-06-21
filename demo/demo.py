@@ -243,7 +243,30 @@ def save_vis(demo, img, pred, output_folder):
         gravity=field['up'],
         latimap_format=pred['pred_latitude_original_mode'],
     )
-    pred_vis.save(os.path.join(output_folder, 'perspective_pred'))
+    # pred_vis.save(os.path.join(output_folder, 'perspective_pred'))
+    img = draw_from_r_p_f_cx_cy(
+            img[:,:,::-1], 
+            pred['pred_roll'].item(), 
+            pred['pred_pitch'].item(), 
+            pred['pred_general_vfov'].item(), 
+            pred['pred_rel_cx'].item(), 
+            pred['pred_rel_cy'].item(),
+            'deg',
+            up_color=(0,1,0),
+    ).astype(np.uint8)
+
+    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+    pred_roll = "pred roll: " + str(round(pred['pred_roll'].item(), 3))
+    pred_pitch = "pred pitch: " + str(round(pred['pred_pitch'].item(), 3))
+    pred_vfov = "pred vfov: " + str(round(pred['pred_general_vfov'].item(), 3))
+
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    font_scale = 0.75
+    img = cv2.putText(img, pred_roll, (int(img.shape[1] * 0.6) - 2, int(img.shape[0] * 0.1)), font, font_scale, (0, 0, 255), 2)
+    img = cv2.putText(img, pred_pitch, (int(img.shape[1]* 0.6) - 2, int(img.shape[0] * 0.1) + 25), font, font_scale, (0, 0, 255), 2)
+    img = cv2.putText(img, pred_vfov, (int(img.shape[1]* 0.6) - 2, int(img.shape[0] * 0.1) + 50), font, font_scale, (0, 0, 255), 2)
+
+    cv2.imwrite(os.path.join(output_folder, 'perspective_pred.png'), img)
 
     if 'opt_param' in pred.keys():
         optimized_vis = draw_from_r_p_f_cx_cy(
