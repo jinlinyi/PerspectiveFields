@@ -1,0 +1,40 @@
+MODEL:
+  META_ARCHITECTURE: "PersFormer"
+  BACKBONE:
+    NAME: "build_mit_backbone"
+  GRAVITY_ON: True
+  LATITUDE_ON: True
+  RECOVER_RPF: True
+  RECOVER_PP: False
+  FREEZE:  []
+  WEIGHTS: './init_model_weights/cvpr2023.pth'
+  LATITUDE_DECODER:
+    LOSS_WEIGHT: 1.0
+    LOSS_TYPE: 'regression'
+  GRAVITY_DECODER:
+    LOSS_WEIGHT: 1.0
+    LOSS_TYPE: 'regression'
+  PARAM_DECODER:
+    NAME: 'ParamNet'
+    LOSS_TYPE: 'regression'
+    PREDICT_PARAMS: ['roll', 'pitch', 'vfov']
+    INPUT_SIZE: 64 
+    LOSS_WEIGHT: 1.0
+DATASETS:
+  TRAIN: ("edina_train", "cities360_train")
+  TEST: ("edina_test_crop_vfov",)
+OUTPUT_DIR: "/home/msticha/exps/e01_edina"
+TEST:
+  EVAL_PERIOD: 500
+SOLVER:
+  IMS_PER_BATCH: 32
+  BASE_LR: 0.01
+  MAX_ITER: 90000
+  CHECKPOINT_PERIOD: 500
+  LR_SCHEDULER_NAME: WarmupMultiStepLR
+  STEPS: (40000, 60000)
+DATALOADER:
+  NUM_WORKERS: 8
+  AUGMENTATION: True
+  AUGMENTATION_FUN: uniform_vfov_crop_resize
+VIS_PERIOD: 500
