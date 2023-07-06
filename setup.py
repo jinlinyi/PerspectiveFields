@@ -1,11 +1,11 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 setup(
     name="perspective2d",
     version="0.1",
     packages=find_packages(),
     install_requires=[
-        'detectron2@git+https://github.com/facebookresearch/detectron2.git@4e447553eb32b6e3784df0b8fca286935107b2fd',
+        "detectron2@git+https://github.com/facebookresearch/detectron2.git@4e447553eb32b6e3784df0b8fca286935107b2fd",
         "torchvision",
         "torchaudio",
         "openexr",

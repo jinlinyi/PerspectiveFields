@@ -1,43 +1,53 @@
+import math
+import types
+from abc import ABCMeta, abstractmethod
+from functools import partial
+
+import timm
 import torch
 import torch.nn as nn
 import torch.nn.functional
 import torch.nn.functional as F
-from functools import partial
-import timm
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
-import types
-import math
-from abc import ABCMeta, abstractmethod
 
 ############################################################
 
-def resize(input,
-           size=None,
-           scale_factor=None,
-           mode='nearest',
-           align_corners=None,
-           warning=True):
+
+def resize(
+    input,
+    size=None,
+    scale_factor=None,
+    mode="nearest",
+    align_corners=None,
+    warning=True,
+):
     if warning:
         if size is not None and align_corners:
             input_h, input_w = tuple(int(x) for x in input.shape[2:])
             output_h, output_w = tuple(int(x) for x in size)
             if output_h > input_h or output_w > output_h:
-                if ((output_h > 1 and output_w > 1 and input_h > 1
-                     and input_w > 1) and (output_h - 1) % (input_h - 1)
-                        and (output_w - 1) % (input_w - 1)):
+                if (
+                    (output_h > 1 and output_w > 1 and input_h > 1 and input_w > 1)
+                    and (output_h - 1) % (input_h - 1)
+                    and (output_w - 1) % (input_w - 1)
+                ):
                     warnings.warn(
-                        f'When align_corners={align_corners}, '
-                        'the output would more aligned if '
-                        f'input size {(input_h, input_w)} is `x+1` and '
-                        f'out size {(output_h, output_w)} is `nx+1`')
+                        f"When align_corners={align_corners}, "
+                        "the output would more aligned if "
+                        f"input size {(input_h, input_w)} is `x+1` and "
+                        f"out size {(output_h, output_w)} is `nx+1`"
+                    )
     return F.interpolate(input, size, scale_factor, mode, align_corners)
 
+
 ############################################################
+
 
 class MLP(nn.Module):
     """
     Linear Embedding
     """
+
     def __init__(self, input_dim=2048, embed_dim=768):
         super().__init__()
         self.proj = nn.Linear(input_dim, embed_dim)
@@ -79,23 +89,25 @@ class BaseDecodeHead(nn.Module, metaclass=ABCMeta):
             Default: False.
     """
 
-    def __init__(self,
-                 in_channels,
-                 channels,
-                 *,
-                 num_classes,
-                 dropout_ratio=0.1,
-                 conv_cfg=None,
-                 norm_cfg=None,
-                 act_cfg=dict(type='ReLU'),
-                 in_index=-1,
-                 input_transform=None,
-                 decoder_params=None,
-                 ignore_index=255,
-                 sampler=None,
-                 align_corners=False,
-                 **kwargs):
-        super(BaseDecodeHead, self).__init__()
+    def __init__(
+        self,
+        in_channels,
+        channels,
+        *,
+        num_classes,
+        dropout_ratio=0.1,
+        conv_cfg=None,
+        norm_cfg=None,
+        act_cfg=dict(type="ReLU"),
+        in_index=-1,
+        input_transform=None,
+        decoder_params=None,
+        ignore_index=255,
+        sampler=None,
+        align_corners=False,
+        **kwargs,
+    ):
+        super().__init__()
         self._init_inputs(in_channels, in_index, input_transform)
         self.channels = channels
         self.num_classes = num_classes
@@ -120,9 +132,11 @@ class BaseDecodeHead(nn.Module, metaclass=ABCMeta):
 
     def extra_repr(self):
         """Extra repr."""
-        s = f'input_transform={self.input_transform}, ' \
-            f'ignore_index={self.ignore_index}, ' \
-            f'align_corners={self.align_corners}'
+        s = (
+            f"input_transform={self.input_transform}, "
+            f"ignore_index={self.ignore_index}, "
+            f"align_corners={self.align_corners}"
+        )
         return s
 
     def _init_inputs(self, in_channels, in_index, input_transform):
@@ -145,14 +159,14 @@ class BaseDecodeHead(nn.Module, metaclass=ABCMeta):
         """
 
         if input_transform is not None:
-            assert input_transform in ['resize_concat', 'multiple_select']
+            assert input_transform in ["resize_concat", "multiple_select"]
         self.input_transform = input_transform
         self.in_index = in_index
         if input_transform is not None:
             assert isinstance(in_channels, (list, tuple))
             assert isinstance(in_index, (list, tuple))
             assert len(in_channels) == len(in_index)
-            if input_transform == 'resize_concat':
+            if input_transform == "resize_concat":
                 self.in_channels = sum(in_channels)
             else:
                 self.in_channels = in_channels
@@ -169,17 +183,19 @@ class BaseDecodeHead(nn.Module, metaclass=ABCMeta):
             Tensor: The transformed inputs
         """
 
-        if self.input_transform == 'resize_concat':
+        if self.input_transform == "resize_concat":
             inputs = [inputs[i] for i in self.in_index]
             upsampled_inputs = [
                 resize(
                     input=x,
                     size=inputs[0].shape[2:],
-                    mode='bilinear',
-                    align_corners=self.align_corners) for x in inputs
+                    mode="bilinear",
+                    align_corners=self.align_corners,
+                )
+                for x in inputs
             ]
             inputs = torch.cat(upsampled_inputs, dim=1)
-        elif self.input_transform == 'multiple_select':
+        elif self.input_transform == "multiple_select":
             inputs = [inputs[i] for i in self.in_index]
         else:
             inputs = inputs[self.in_index]
@@ -189,24 +205,25 @@ class BaseDecodeHead(nn.Module, metaclass=ABCMeta):
     @abstractmethod
     def forward(self, inputs):
         """Placeholder of forward function."""
-        pass   
-    
-    
+        pass
+
+
 class LowLevelEncoder(nn.Module):
     def __init__(self, feat_dim=64, in_channel=3):
-        super(LowLevelEncoder, self).__init__()
-        self.conv1 = nn.Conv2d(3, feat_dim, kernel_size=7, stride=2, padding=3,
-                               bias=False)
+        super().__init__()
+        self.conv1 = nn.Conv2d(
+            3, feat_dim, kernel_size=7, stride=2, padding=3, bias=False
+        )
         self.bn1 = nn.BatchNorm2d(feat_dim)
         self.relu = nn.ReLU(inplace=True)
-            
+
     def forward(self, x):
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
         return x
-        
-        
+
+
 ################################################
 class ResidualConvUnit(nn.Module):
     """Residual convolution module."""
@@ -251,7 +268,7 @@ class FeatureFusionBlock(nn.Module):
         Args:
             features (int): number of features
         """
-        super(FeatureFusionBlock, self).__init__()
+        super().__init__()
         if not unit2only:
             self.resConfUnit1 = ResidualConvUnit(features)
         self.resConfUnit2 = ResidualConvUnit(features)
@@ -273,4 +290,3 @@ class FeatureFusionBlock(nn.Module):
         )
 
         return output
-    

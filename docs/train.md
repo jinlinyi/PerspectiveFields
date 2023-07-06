@@ -9,7 +9,7 @@ wget https://www.dropbox.com/s/9se3lrpljd59cod/gsv_test_crop_uniform.tar
 Extract the dataset under `perspectiveField/datasets`.
 
 
-Note that we used images from [360cities](https://www.360cities.net) to train the PerspectiveNet in Table 1. 
+Note that we used images from [360cities](https://www.360cities.net) to train the PerspectiveNet in Table 1.
 
 
 # Training PerspectiveNet + ParamNet
@@ -21,7 +21,7 @@ Place it under `perspectiveField/init_model_weights`.
 
 
 - We first trained PerspectiveNet:
-```bash 
+```bash
 python -W ignore train.py \
 --config-file configs/config-mix-gsv-regress.yaml \
 --num-gpus 2 \

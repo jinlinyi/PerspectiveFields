@@ -2,25 +2,25 @@
 import itertools
 import json
 import logging
-import numpy as np
 import os
 from collections import OrderedDict
+
+import detectron2.utils.comm as comm
+import numpy as np
 import PIL.Image as Image
 import pycocotools.mask as mask_util
-from torch.nn import functional as F
 import torch
-
 from detectron2.data import DatasetCatalog, MetadataCatalog
+from detectron2.evaluation.evaluator import DatasetEvaluator
 from detectron2.utils.comm import all_gather, is_main_process, synchronize
 from detectron2.utils.file_io import PathManager
-import detectron2.utils.comm as comm
-
-from detectron2.evaluation.evaluator import DatasetEvaluator
-from detectron2.utils.logger import setup_logger, create_small_table
+from detectron2.utils.logger import create_small_table, setup_logger
+from torch.nn import functional as F
 
 from .gravity_evaluation import GravityEvaluator
 from .latitude_evaluation import LatitudeEvaluator
 from .param_evaluation import ParamEvaluator
+
 
 class PerspectiveEvaluator(DatasetEvaluator):
     """
@@ -61,22 +61,37 @@ class PerspectiveEvaluator(DatasetEvaluator):
         except AttributeError:
             self._contiguous_id_to_dataset_id = None
         self.evaluators = []
-        self.gravity_on     = cfg.MODEL.GRAVITY_ON
-        self.latitude_on    = cfg.MODEL.LATITUDE_ON
-        self.param_on       = cfg.MODEL.RECOVER_RPF | cfg.MODEL.RECOVER_PP
-        if self.gravity_on and not 'persformer_heads' in cfg.MODEL.FREEZE and not cfg.MODEL.PARAM_DECODER.SYNTHETIC_PRETRAIN:
+        self.gravity_on = cfg.MODEL.GRAVITY_ON
+        self.latitude_on = cfg.MODEL.LATITUDE_ON
+        self.param_on = cfg.MODEL.RECOVER_RPF | cfg.MODEL.RECOVER_PP
+        if (
+            self.gravity_on
+            and not "persformer_heads" in cfg.MODEL.FREEZE
+            and not cfg.MODEL.PARAM_DECODER.SYNTHETIC_PRETRAIN
+        ):
             self.evaluators.append(GravityEvaluator(cfg))
-        if self.latitude_on and not 'persformer_heads' in cfg.MODEL.FREEZE and not cfg.MODEL.PARAM_DECODER.SYNTHETIC_PRETRAIN:
+        if (
+            self.latitude_on
+            and not "persformer_heads" in cfg.MODEL.FREEZE
+            and not cfg.MODEL.PARAM_DECODER.SYNTHETIC_PRETRAIN
+        ):
             self.evaluators.append(LatitudeEvaluator(cfg))
         if self.param_on:
             self.evaluators.append(ParamEvaluator(cfg))
-
-
 
     def reset(self):
         self._predictions = []
 
     def process(self, inputs, outputs):
+        """
+        Args:
+            inputs: the inputs to a model.
+                It is a list of dicts. Each dict corresponds to an image and
+                contains keys like "height", "width", "file_name".
+            outputs: the outputs of a model. It is either list of semantic segmentation predictions
+                (Tensor [H, W]) or list of dicts with key "sem_seg" that contains semantic
+                segmentation prediction in the same format.
+        """
         for input, output in zip(inputs, outputs):
             ret = {}
             for evaluator in self.evaluators:
@@ -84,6 +99,15 @@ class PerspectiveEvaluator(DatasetEvaluator):
             self._predictions.append(ret)
 
     def evaluate(self):
+        """
+        TODO: Ask about this
+        Evaluates standard semantic segmentation metrics (http://cocodataset.org/#stuff-eval):
+
+        * Mean intersection-over-union averaged across classes (mIoU)
+        * Frequency Weighted IoU (fwIoU)
+        * Mean pixel accuracy averaged across classes (mACC)
+        * Pixel Accuracy (pACC)
+        """
         if self._distributed:
             comm.synchronize()
             predictions = comm.gather(self._predictions, dst=0)
@@ -91,7 +115,7 @@ class PerspectiveEvaluator(DatasetEvaluator):
 
             if not comm.is_main_process():
                 return {}
-        
+
         else:
             predictions = self._predictions
 

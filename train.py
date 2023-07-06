@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-import numpy as np
+import os
 from collections import OrderedDict
+
 import detectron2.utils.comm as comm
+import numpy as np
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
 from detectron2.data import (
@@ -9,7 +11,12 @@ from detectron2.data import (
     build_detection_test_loader,
     build_detection_train_loader,
 )
-from detectron2.engine import DefaultTrainer, default_argument_parser, default_setup, launch
+from detectron2.engine import (
+    DefaultTrainer,
+    default_argument_parser,
+    default_setup,
+    launch,
+)
 from detectron2.evaluation import inference_on_dataset
 from detectron2.utils.logger import setup_logger
 
@@ -18,25 +25,55 @@ import perspective2d.modeling  # noqa
 from perspective2d.config import get_perspective2d_cfg_defaults
 from perspective2d.data import PerspectiveMapper
 from perspective2d.evaluation import PerspectiveEvaluator
-import os
+
 
 class Trainer(DefaultTrainer):
     @classmethod
     def build_evaluator(cls, cfg, dataset_name):
+        """
+        Args:
+            cfg (CfgNode)
+            dataset_name (str): name of dataset to test on
+
+        Returns:
+            PerspectiveEvaluator: class used to evaluate perspective field predictions
+        """
         evaluator_type = MetadataCatalog.get(dataset_name).evaluator_type
         if evaluator_type in ["gravity", "latitude", "perspective"]:
-            return PerspectiveEvaluator(dataset_name, cfg, True, output_dir=cfg.OUTPUT_DIR)
+            return PerspectiveEvaluator(
+                dataset_name, cfg, True, output_dir=cfg.OUTPUT_DIR
+            )
         else:
             raise ValueError("The evaluator type is wrong")
 
     @classmethod
     def build_test_loader(cls, cfg, dataset_name):
+        """
+        Args:
+            cfg (CfgNode)
+            dataset_name (str): name of dataset to test on
+
+        Returns:
+            torch.utils.data.DataLoader: a torch DataLoader, that loads the given detection dataset,
+                                         with test-time transformation and batching.
+        """
         return build_detection_test_loader(
-            cfg, dataset_name, mapper=PerspectiveMapper(cfg, False, dataset_names=(dataset_name,))
+            cfg,
+            dataset_name,
+            mapper=PerspectiveMapper(cfg, False, dataset_names=(dataset_name,)),
         )
 
     @classmethod
     def build_train_loader(cls, cfg):
+        """
+        Args:
+            cfg (CfgNode)
+
+        Returns:
+            torch.utils.data.DataLoader: a dataloader. Each output from it is a list[mapped_element]
+                                         of length total_batch_size / num_workers,
+                                         where mapped_element is produced by the mapper
+        """
         dataset_names = cfg.DATASETS.TRAIN
         return build_detection_train_loader(
             cfg, mapper=PerspectiveMapper(cfg, True, dataset_names=dataset_names)
@@ -65,8 +102,17 @@ class Trainer(DefaultTrainer):
                 )
         return results
 
-        
+
+# TODO: set args type
 def setup(args):
+    """setup model configurations
+
+    Args:
+        args (_type_): command-line arguments
+
+    Returns:
+        CfgNode: model configurations
+    """
     cfg = get_cfg()
     get_perspective2d_cfg_defaults(cfg)
     cfg.merge_from_file(args.config_file)
@@ -74,7 +120,9 @@ def setup(args):
     cfg.freeze()
     default_setup(cfg, args)
     # Setup logger for "meshrcnn" module
-    setup_logger(output=cfg.OUTPUT_DIR, distributed_rank=comm.get_rank(), name="perspective")
+    setup_logger(
+        output=cfg.OUTPUT_DIR, distributed_rank=comm.get_rank(), name="perspective"
+    )
     return cfg
 
 
@@ -90,13 +138,16 @@ def main(args):
         print(res)
         return res
 
-
     trainer = Trainer(cfg)
 
     print("# of layers require gradient:")
     for c in trainer.checkpointer.model.named_children():
-        grad = np.array([param.requires_grad for param in 
-            getattr(trainer.checkpointer.model, c[0]).parameters()])
+        grad = np.array(
+            [
+                param.requires_grad
+                for param in getattr(trainer.checkpointer.model, c[0]).parameters()
+            ]
+        )
         print(c[0], grad.sum())
     trainer.resume_or_load(resume=args.resume)
     return trainer.train()

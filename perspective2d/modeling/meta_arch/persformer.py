@@ -1,26 +1,23 @@
-import numpy as np
 from typing import Callable, Dict, Optional, Tuple, Union
+
 import fvcore.nn.weight_init as weight_init
+import numpy as np
 import torch
+from detectron2.config import configurable
+from detectron2.layers import Conv2d, ShapeSpec, get_norm
+from detectron2.modeling.backbone import Backbone, build_backbone
+from detectron2.modeling.meta_arch.build import META_ARCH_REGISTRY
+from detectron2.structures import ImageList
+from detectron2.utils.events import get_event_storage
+from detectron2.utils.registry import Registry
 from torch import nn
 from torch.nn import functional as F
 
-from detectron2.config import configurable
-from detectron2.layers import Conv2d, ShapeSpec, get_norm
-from detectron2.structures import ImageList
-from detectron2.utils.registry import Registry
-
-from detectron2.modeling.backbone import Backbone, build_backbone
-from detectron2.modeling.meta_arch.build import META_ARCH_REGISTRY
-
-from detectron2.utils.events import get_event_storage
-
-from ..persformer_heads import build_persformer_heads
-from ..backbone import build_mit_backbone, LowLevelEncoder
+from ..backbone import LowLevelEncoder, build_mit_backbone
 from ..param_network import build_param_net
+from ..persformer_heads import build_persformer_heads
 
 __all__ = ["PersFormer"]
-
 
 
 @META_ARCH_REGISTRY.register()
@@ -36,11 +33,11 @@ class PersFormer(nn.Module):
         backbone: Backbone,
         ll_enc: nn.Module,
         persformer_heads: nn.Module,
-        param_net: nn.Module, 
+        param_net: nn.Module,
         pixel_mean: Tuple[float],
         pixel_std: Tuple[float],
         vis_period: int,
-        freeze, 
+        freeze,
         debug_on,
         cfg,
     ):
@@ -56,7 +53,9 @@ class PersFormer(nn.Module):
         self.ll_enc = ll_enc
         self.persformer_heads = persformer_heads
         self.param_net = param_net
-        self.register_buffer("pixel_mean", torch.tensor(pixel_mean).view(-1, 1, 1), False)
+        self.register_buffer(
+            "pixel_mean", torch.tensor(pixel_mean).view(-1, 1, 1), False
+        )
         self.register_buffer("pixel_std", torch.tensor(pixel_std).view(-1, 1, 1), False)
         self.vis_period = vis_period
         self.freeze = freeze
@@ -80,7 +79,11 @@ class PersFormer(nn.Module):
             backbone = build_backbone(cfg)
             ll_enc = LowLevelEncoder()
             persformer_heads = build_persformer_heads(cfg, backbone.output_shape())
-        param_net = build_param_net(cfg) if cfg.MODEL.RECOVER_RPF or cfg.MODEL.RECOVER_PP else None
+        param_net = (
+            build_param_net(cfg)
+            if cfg.MODEL.RECOVER_RPF or cfg.MODEL.RECOVER_PP
+            else None
+        )
         return {
             "backbone": backbone,
             "ll_enc": ll_enc,
@@ -91,7 +94,7 @@ class PersFormer(nn.Module):
             "vis_period": cfg.VIS_PERIOD,
             "freeze": cfg.MODEL.FREEZE,
             "debug_on": cfg.DEBUG_ON,
-            "cfg": cfg, 
+            "cfg": cfg,
         }
 
     @property
@@ -125,41 +128,44 @@ class PersFormer(nn.Module):
             hl_features = self.backbone(images.tensor)
             ll_features = self.ll_enc(images.tensor)
             features = {
-                'hl': hl_features, # features from backbone
-                'll': ll_features, # low level features
+                "hl": hl_features,  # features from backbone
+                "ll": ll_features,  # low level features
             }
 
             targets_dict = {}
             if "gt_gravity" in batched_inputs[0]:
                 targets = [x["gt_gravity"].to(self.device) for x in batched_inputs]
                 targets = ImageList.from_tensors(
-                    targets, self.backbone.size_divisibility, self.persformer_heads.gravity_head.ignore_value
+                    targets,
+                    self.backbone.size_divisibility,
+                    self.persformer_heads.gravity_head.ignore_value,
                 ).tensor
-                targets_dict['gt_gravity'] = targets
+                targets_dict["gt_gravity"] = targets
 
             if "gt_latitude" in batched_inputs[0]:
                 targets = [x["gt_latitude"].to(self.device) for x in batched_inputs]
                 targets = ImageList.from_tensors(
-                    targets, self.backbone.size_divisibility, self.persformer_heads.latitude_head.ignore_value
+                    targets,
+                    self.backbone.size_divisibility,
+                    self.persformer_heads.latitude_head.ignore_value,
                 ).tensor
-                targets_dict['gt_latitude'] = targets
+                targets_dict["gt_latitude"] = targets
         else:
             targets_dict = {}
             targets = [x["gt_gravity"].to(self.device) for x in batched_inputs]
             targets = torch.cat(targets)
-            targets_dict['gt_gravity'] = targets
+            targets_dict["gt_gravity"] = targets
             targets = [x["gt_latitude"].to(self.device) for x in batched_inputs]
             targets = torch.cat(targets)
-            targets_dict['gt_latitude'] = targets
+            targets_dict["gt_latitude"] = targets
 
-        
         if self.training:
             if not self.cfg.MODEL.PARAM_DECODER.SYNTHETIC_PRETRAIN:
                 losses, predictions = self.persformer_heads(features, targets_dict)
             else:
                 losses = {}
-                images_g = torch.cat([x['gt_gravity'][None] for x in batched_inputs])
-                images_l = torch.cat([x['gt_latitude'][None] for x in batched_inputs])
+                images_g = torch.cat([x["gt_gravity"][None] for x in batched_inputs])
+                images_l = torch.cat([x["gt_latitude"][None] for x in batched_inputs])
                 predictions = torch.cat((images_g, images_l), dim=1).to(self.device)
 
             if self.param_net is not None:
@@ -170,15 +176,24 @@ class PersFormer(nn.Module):
                 if self.vis_period > 0:
                     storage = get_event_storage()
                     if storage.iter % self.vis_period == 0:
-                        self.visualize(images, features, targets_dict, predictions, batched_inputs, storage)
+                        self.visualize(
+                            images,
+                            features,
+                            targets_dict,
+                            predictions,
+                            batched_inputs,
+                            storage,
+                        )
             return losses
-            
+
         if not self.cfg.MODEL.PARAM_DECODER.SYNTHETIC_PRETRAIN:
             results = self.persformer_heads.inference(features)
-            processed_results = self.persformer_heads.postprocess(results, batched_inputs, images)
+            processed_results = self.persformer_heads.postprocess(
+                results, batched_inputs, images
+            )
         else:
-            images_g = torch.cat([x['gt_gravity'][None] for x in batched_inputs])
-            images_l = torch.cat([x['gt_latitude'][None] for x in batched_inputs])
+            images_g = torch.cat([x["gt_gravity"][None] for x in batched_inputs])
+            images_l = torch.cat([x["gt_latitude"][None] for x in batched_inputs])
             results = torch.cat((images_g, images_l), dim=1).to(self.device)
             processed_results = [{}]
 
@@ -187,38 +202,57 @@ class PersFormer(nn.Module):
             processed_results[0].update(param)
         return processed_results
 
-
-    def visualize(self, images, features, targets_dict, predictions, batched_inputs, storage, img_idx = 0):
+    def visualize(
+        self,
+        images,
+        features,
+        targets_dict,
+        predictions,
+        batched_inputs,
+        storage,
+        img_idx=0,
+    ):
         vis_dict_total = {}
         for img_idx in range(min(5, len(images))):
             feature_vis = {}
             for key in features.keys():
                 if type(features[key]) is list:
-                    feature_vis[key] = [ft[img_idx:img_idx+1] for ft in features[key]]
+                    feature_vis[key] = [
+                        ft[img_idx : img_idx + 1] for ft in features[key]
+                    ]
                 else:
-                    feature_vis[key] = features[key][img_idx:img_idx+1]
+                    feature_vis[key] = features[key][img_idx : img_idx + 1]
 
-            
-            image_vis = ((images.tensor[img_idx]*self.pixel_std+ self.pixel_mean)[[2,1,0],:,:]).cpu()
+            image_vis = (
+                (images.tensor[img_idx] * self.pixel_std + self.pixel_mean)[
+                    [2, 1, 0], :, :
+                ]
+            ).cpu()
             target_vis = {}
             for key in targets_dict:
                 target_vis[key] = targets_dict[key][img_idx]
 
-            vis_dict = self.persformer_heads.visualize(image_vis, feature_vis, target_vis)
+            vis_dict = self.persformer_heads.visualize(
+                image_vis, feature_vis, target_vis
+            )
             if self.debug_on:
                 predictions_vis = {}
                 for key in predictions:
-                    predictions_vis[key] = predictions[key][img_idx:img_idx+1]
-                vis_dict.update(self.param_net.visualize(predictions_vis, batched_inputs[img_idx:img_idx+1]))
- 
+                    predictions_vis[key] = predictions[key][img_idx : img_idx + 1]
+                vis_dict.update(
+                    self.param_net.visualize(
+                        predictions_vis, batched_inputs[img_idx : img_idx + 1]
+                    )
+                )
+
             # Horizontal stack
             for key in vis_dict.keys():
                 if key in vis_dict_total:
-                    vis_dict_total[key] = torch.cat((vis_dict_total[key], vis_dict[key]), 2)
+                    vis_dict_total[key] = torch.cat(
+                        (vis_dict_total[key], vis_dict[key]), 2
+                    )
                 else:
                     vis_dict_total[key] = vis_dict[key]
 
         for key in vis_dict_total.keys():
             storage.put_image(key, vis_dict_total[key])
-
-

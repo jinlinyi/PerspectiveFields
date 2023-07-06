@@ -15,7 +15,7 @@ CVPR 2023
 ![alt text](assets/teaser-field.jpg)
 We propose Perspective Fields as a representation that models the local perspective properties of an image. Perspective Fields contain per-pixel information about the camera view, parameterized as an up vector and a latitude value.
 
-This repo contains code for our [paper][0]. 
+This repo contains code for our [paper][0].
 
 
 <img height="100" alt="swiping-1" src="assets/swiping-1.gif"> <img height="100" alt="swiping-2" src="assets/swiping-2.gif"> <img height="100" alt="swiping-3" src="assets/swiping-3.gif"> <img height="100" alt="swiping-4" src="assets/swiping-4.gif">
@@ -47,7 +47,7 @@ If you find this code useful, please consider citing:
 
 ```text
 @inproceedings{jin2023perspective,
-      title={Perspective Fields for Single Image Camera Calibration}, 
+      title={Perspective Fields for Single Image Camera Calibration},
       author={Linyi Jin and Jianming Zhang and Yannick Hold-Geoffroy and Oliver Wang and Kevin Matzen and Matthew Sticha and David F. Fouhey},
       booktitle = {CVPR},
       year={2023}
@@ -58,5 +58,5 @@ Acknowledgment
 --------------
 This work was partially funded by the DARPA Machine Common Sense Program.
 We thank Geoffrey Oxholm for the help with
-Upright, and Aaron Hertzmann, Scott Cohen, 
-Ang Cao, Dandan Shan, Mohamed El Banani, Sarah Jabbour, Shengyi Qian for discussions. 
+Upright, and Aaron Hertzmann, Scott Cohen,
+Ang Cao, Dandan Shan, Mohamed El Banani, Sarah Jabbour, Shengyi Qian for discussions.
