@@ -20,21 +20,13 @@ from torch.nn import functional as F
 
 class LatitudeEvaluator:
     """
-    Evaluate semantic segmentation metrics.
+    Evaluate latitude maps.
     """
 
     def __init__(
         self,
         cfg,
     ):
-        """
-        Args:
-            dataset_name (str): name of the dataset to be evaluated.
-            distributed (bool): if True, will collect results from all ranks for evaluation.
-                Otherwise, will evaluate the results in the current process.
-            output_dir (str): an output directory to dump results.
-            num_classes, ignore_label: deprecated argument
-        """
         self._logger = logging.getLogger(__name__)
 
         if not self._logger.isEnabledFor(logging.INFO):
@@ -51,15 +43,6 @@ class LatitudeEvaluator:
             raise NotImplementedError
 
     def process(self, input, output):
-        """
-        Args:
-            inputs: the inputs to a model.
-                It is a list of dicts. Each dict corresponds to an image and
-                contains keys like "height", "width", "file_name".
-            outputs: the outputs of a model. It is either list of semantic segmentation predictions
-                (Tensor [H, W]) or list of dicts with key "sem_seg" that contains semantic
-                segmentation prediction in the same format.
-        """
         ret = {}
         if "pred_latitude_original" in output.keys():
             pred = output["pred_latitude"]
@@ -106,14 +89,6 @@ class LatitudeEvaluator:
         return ret
 
     def evaluate(self, predictions):
-        """
-        Evaluates standard semantic segmentation metrics (http://cocodataset.org/#stuff-eval):
-
-        * Mean intersection-over-union averaged across classes (mIoU)
-        * Frequency Weighted IoU (fwIoU)
-        * Mean pixel accuracy averaged across classes (mACC)
-        * Pixel Accuracy (pACC)
-        """
         res = {}
         res["latitude_Loss"] = np.average([e["latitude_loss"] for e in predictions])
         res["latitude_err_mean"] = np.average(

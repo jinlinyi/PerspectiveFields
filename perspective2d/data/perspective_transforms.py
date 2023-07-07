@@ -380,7 +380,9 @@ class PerspectiveMapper:
         return dataset_dict
 
     def augmentation_with_up_field(self, img, latimap, gfield):
-        # TODO: ???
+        """
+        Augmentation with the up vector. Used when it is hard to get one single vertical vanishing point e.g. with distortion.
+        """
         img = self.color_aug(image=img)["image"]
         aug_list = []
         if self.is_train:

@@ -16,7 +16,6 @@ from detectron2.utils.visualizer import ColorMode, Visualizer
 from perspective2d.utils import (
     draw_latitude_field,
     draw_up_field,
-    draw_vector_field,
     general_vfov_to_focal,
 )
 from perspective2d.utils.param_opt import predict_rpfpp

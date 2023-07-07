@@ -23,21 +23,13 @@ from perspective2d.utils import draw_prediction_distribution
 
 class ParamEvaluator:
     """
-    Evaluate semantic segmentation metrics.
+    Evaluate parameter net
     """
 
     def __init__(
         self,
         cfg,
     ):
-        """
-        Args:
-            dataset_name (str): name of the dataset to be evaluated.
-            distributed (bool): if True, will collect results from all ranks for evaluation.
-                Otherwise, will evaluate the results in the current process.
-            output_dir (str): an output directory to dump results.
-            num_classes, ignore_label: deprecated argument
-        """
         self._logger = logging.getLogger(__name__)
         if not self._logger.isEnabledFor(logging.INFO):
             setup_logger(name=__name__)
@@ -47,15 +39,6 @@ class ParamEvaluator:
         self.loss_type = cfg.MODEL.PARAM_DECODER.LOSS_TYPE
 
     def process(self, input, output):
-        """
-        Args:
-            inputs: the inputs to a model.
-                It is a list of dicts. Each dict corresponds to an image and
-                contains keys like "height", "width", "file_name".
-            outputs: the outputs of a model. It is either list of semantic segmentation predictions
-                (Tensor [H, W]) or list of dicts with key "sem_seg" that contains semantic
-                segmentation prediction in the same format.
-        """
         ret = {}
         for key in self.predicted_targets:
             ret[key + "_err"] = (
@@ -69,14 +52,6 @@ class ParamEvaluator:
         return ret
 
     def evaluate(self, predictions):
-        """
-        Evaluates standard semantic segmentation metrics (http://cocodataset.org/#stuff-eval):
-
-        * Mean intersection-over-union averaged across classes (mIoU)
-        * Frequency Weighted IoU (fwIoU)
-        * Mean pixel accuracy averaged across classes (mACC)
-        * Pixel Accuracy (pACC)
-        """
         figs = {}
         res = {}
         for key in self.predicted_targets:

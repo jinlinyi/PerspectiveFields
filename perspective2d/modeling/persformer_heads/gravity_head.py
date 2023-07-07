@@ -12,7 +12,7 @@ from torch import nn
 from torch.nn import functional as F
 
 from perspective2d.modeling.persformer_heads import BaseDecodeHead
-from perspective2d.utils import decode_bin, draw_up_field, draw_vector_field
+from perspective2d.utils import decode_bin, draw_up_field
 
 from .decode_head import MLP, FeatureFusionBlock
 from .loss_fns import meanstd_tanh_norm_loss, msgil_norm_loss
@@ -23,23 +23,12 @@ GRAVITY_DECODERS_REGISTRY = Registry("GRAVITY_HEADS")
 
 
 def build_gravity_decoder(cfg, input_shape):
-    """
-    Build a semantic segmentation head from `cfg.MODEL.SEM_SEG_HEAD.NAME`.
-    """
     name = cfg.MODEL.GRAVITY_DECODER.NAME
     return GRAVITY_DECODERS_REGISTRY.get(name)(cfg, input_shape)
 
 
 @GRAVITY_DECODERS_REGISTRY.register()
 class GravityDecoder(BaseDecodeHead):
-    """
-    A semantic segmentation head described in :paper:`PanopticFPN`.
-    It takes a list of FPN features as input, and applies a sequence of
-    3x3 convs and upsampling to scale all of them to the stride defined by
-    ``common_stride``. Then these features are added and used to make final
-    predictions by another 1x1 conv layer.
-    """
-
     @configurable
     def __init__(self, feature_strides, loss_weight, **kwargs):
         super().__init__(input_transform="multiple_select", **kwargs)
@@ -177,11 +166,6 @@ class GravityDecoder(BaseDecodeHead):
         return x
 
     def forward(self, features, targets=None):
-        """
-        Returns:
-            In training, returns (None, dict of losses)
-            In inference, returns (CxHxW logits, {})
-        """
         x = self.layers(features)
         if self.loss_type == "regression":
             x = F.normalize(x, dim=1)

@@ -1,26 +1,32 @@
 Perspective Fields for Single Image Camera Calibration
 ================================================================
+[![Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue)](https://huggingface.co/spaces/jinlinyi/PerspectiveFields)
 
+###  [Project Page](https://jinlinyi.github.io/PerspectiveFields/)  | [Paper](https://arxiv.org/abs/2212.03239) | [Live Demo 🤗](https://huggingface.co/spaces/jinlinyi/PerspectiveFields)
+
+CVPR 2023 (✨Highlight)
 <h4>
-Linyi Jin, Jianming Zhang, Yannick Hold-Geoffroy, Oliver Wang, Kevin Matzen, Matthew Sticha, David Fouhey
-</br>
+
+[Linyi Jin](https://jinlinyi.github.io/)<sup>1</sup>, [Jianming Zhang](https://jimmie33.github.io/)<sup>2</sup>, [Yannick Hold-Geoffroy](https://yannickhold.com/)<sup>2</sup>, [Oliver Wang](http://www.oliverwang.info/)<sup>2</sup>, [Kevin Matzen](http://kmatzen.com/)<sup>2</sup>, [Matthew Sticha](https://www.linkedin.com/in/matthew-sticha-746325202/)<sup>1</sup>, [David Fouhey](https://web.eecs.umich.edu/~fouhey/)<sup>1</sup>
 <span style="font-size: 14pt; color: #555555">
-University of Michigan, Adobe Research
+ <sup>1</sup>University of Michigan, <sup>2</sup>Adobe Research
 </span>
-</br>
-CVPR 2023
 </h4>
 <hr>
 
 ![alt text](assets/teaser-field.jpg)
-We propose Perspective Fields as a representation that models the local perspective properties of an image. Perspective Fields contain per-pixel information about the camera view, parameterized as an up vector and a latitude value.
-
-This repo contains code for our [paper][0].
-
+We propose Perspective Fields as a representation that models the local perspective properties of an image. Perspective Fields contain per-pixel information about the camera view, parameterized as an up vector and a latitude value. 
 
 <img height="100" alt="swiping-1" src="assets/swiping-1.gif"> <img height="100" alt="swiping-2" src="assets/swiping-2.gif"> <img height="100" alt="swiping-3" src="assets/swiping-3.gif"> <img height="100" alt="swiping-4" src="assets/swiping-4.gif">
 
+📷 From Perspective Fields, you can also get camera parameters if you assume certain camera models. We provide models to recover camera roll, pitch, fov and principal point location.
 
+
+
+Updates
+------------------
+- We release a new model trained on [360cities](https://www.360cities.net/) and [EDINA](https://github.com/tien-d/EgoDepthNormal/blob/main/README_dataset.md) dataset, consisting of indoor🏠, outdoor🏙️, nature🌳, and egocentric👋 data!
+- Live demo released 🤗. https://huggingface.co/spaces/jinlinyi/PerspectiveFields. Thanks Huggingface for funding this demo!
 
 Usage Instructions
 ------------------
@@ -32,7 +38,6 @@ Usage Instructions
 5. [Train PerspectiveNet + ParamNet][5]
 6. [Test (TODO)][6]
 
-[0]: https://arxiv.org/abs/2212.03239
 [1]: ./docs/environment.md
 [2]: ./jupyter-notebooks/camera2perspective.ipynb
 [3]: ./jupyter-notebooks/predict_perspective_fields.ipynb
@@ -57,6 +62,3 @@ If you find this code useful, please consider citing:
 Acknowledgment
 --------------
 This work was partially funded by the DARPA Machine Common Sense Program.
-We thank Geoffrey Oxholm for the help with
-Upright, and Aaron Hertzmann, Scott Cohen,
-Ang Cao, Dandan Shan, Mohamed El Banani, Sarah Jabbour, Shengyi Qian for discussions.

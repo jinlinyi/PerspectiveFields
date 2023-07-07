@@ -66,20 +66,8 @@ def create_rotation_matrix(
     return R_z @ R_x @ R_y
 
 
-# TODO: ask about xi, xref, yref
 def minfocal(u0, v0, xi, xref=1, yref=1):
-    """compute the minimum focal for the image to be catadioptric given xi
-
-    Args:
-        u0 (int): x-coordinate of principle point
-        v0 (int): y-coordinate of principle point
-        xi (_type_): _description_
-        xref (int, optional): _description_. Defaults to 1.
-        yref (int, optional): _description_. Defaults to 1.
-
-    Returns:
-        float: minimum focal length
-    """
+    """compute the minimum focal for the image to be catadioptric given xi"""
     fmin = np.sqrt(
         -(1 - xi * xi) * ((xref - u0) * (xref - u0) + (yref - v0) * (yref - v0))
     )
@@ -87,7 +75,8 @@ def minfocal(u0, v0, xi, xref=1, yref=1):
     return fmin * 1.0001
 
 
-def deg2rad(deg):  # convert degrees to radians
+def deg2rad(deg):
+    """convert degrees to radians"""
     return deg * np.pi / 180
 
 
@@ -95,15 +84,7 @@ def preprocess(
     img: Union[np.ndarray, Image.Image],
     is_cv2: bool = False,
 ) -> torch.Tensor:
-    """Convert img to tensor
-
-    Args:
-        img (Union[np.ndarray, Image.Image]): input image
-        is_cv2 (bool, optional): Defaults to False.
-
-    Returns:
-        torch.Tensor: img as tensor
-    """
+    """Convert img to tensor"""
     if isinstance(img, np.ndarray) and is_cv2:
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     if isinstance(img, Image.Image):
@@ -125,16 +106,7 @@ def postprocess(
     img: torch.Tensor,
     to_cv2: bool = False,
 ) -> Union[np.ndarray, Image.Image]:
-    """Convert img from tensor to image format
-
-    Args:
-        img (torch.Tensor): input image
-        to_cv2 (bool, optional): Defaults to False.
-
-    Returns:
-        Union[np.ndarray, Image.Image]: image converted to np.ndarray if to_cv2 == True,
-                                        and to Image.Image if to_cv2 == False
-    """
+    """Convert img from tensor to image format"""
     if to_cv2:
         img = np.asarray(img.to("cpu").numpy() * 255, dtype=np.uint8)
         img = np.transpose(img, (1, 2, 0))
@@ -162,7 +134,7 @@ class PanoCam:
         self.pano_path = pano_path
         self.device = device
 
-    # TODO: Ask about vvp
+
     def get_image(
         self,
         vfov=85,
@@ -186,13 +158,13 @@ class PanoCam:
             azimuth (float): camera rotation about world frame y-axis of cropped image (degrees)
             elevation (float): camera rotation about world frame x-axis of cropped image (degrees)
             roll (float): camera rotation about world frame z-axis of cropped image (degrees)
-            ar (float): aspect ratio od cropped image
+            ar (float): aspect ratio of cropped image
             img_format (str): format to return image
 
         Returns:
             crop (np.ndarray): Cropped perspective image
             horizon (float, float): fraction of image left/right border intersection with respect to image height
-            vvp ():
+            vvp (float, float, float): Vertical Vanishing Point, which is the vanishing point for the vertical lines. absvvp is in pixels, vvp is normalized by the image size.
         """
         equi_img = Image.open(self.pano_path)
         equi_img = preprocess(equi_img).to(self.device)
@@ -227,10 +199,10 @@ class PanoCam:
         )
         return crop, horizon, vvp
 
-    # TODO: Ask about xi and return values
     @staticmethod
     def crop_distortion(image360_path, f, xi, H, W, az, el, roll):
         """
+        Reference: https://github.com/dompm/spherical-distortion-dataset/blob/main/spherical_distortion/spherical_distortion.py
         Crop distorted image with specified camera parameters
 
         Args:
@@ -244,12 +216,6 @@ class PanoCam:
             roll: camera rotation about world frame z-axis of cropped image (degrees)
         Returns:
             im (np.ndarray): cropped, distorted image
-            ntheta ():
-            nphi ():
-            offset ():
-            up (np.ndarray): gravity field of cropped, distorted image
-            lat (np.ndarray): latitude map of cropped, distorted image
-            xy_map ():
         """
 
         u0 = W / 2.0
@@ -488,7 +454,6 @@ class PanoCam:
             crop = np.asarray(crop.to("cpu").numpy(), dtype=equi_img.dtype)
         return crop
 
-    # TODO: Ask about colormap
     @staticmethod
     def get_latitude(
         vfov=85, im_w=640, im_h=480, azimuth=0, elevation=30, roll=0, colormap=None
@@ -503,7 +468,7 @@ class PanoCam:
             azimuth (float): camera rotation about the world frame y-axis
             elevation (float): camera rotation about the world frame x-axis (degrees)
             roll (float): camera rotation about the world frame z-axis (degrees)
-            colormap (str): ???
+            colormap (str): return original value if None or colored latitude map
 
         Returns:
             np.ndarray: latitude map of shape (im_h, im_w)
@@ -561,7 +526,7 @@ class PanoCam:
         arrow_map = arrow.reshape(im_h, im_w, 2)
         return arrow_map
 
-    # TODO: Ask about vvp
+
     @staticmethod
     def getAbsVVP(im_h, im_w, horizon, vvp):
         """get absolute vertical vanishing point from horizon line and relative vertical vanishing point
@@ -570,9 +535,10 @@ class PanoCam:
             im_h (int): image height
             im_w (int): image width
             horizon ([float, float]): fraction of image left/right border intersection with respect to image height
-            vvp (): relative vertical vanishing point, defined as vertical vanishing point divided by image height
+            vvp ([float, float, {-1, 1}]): relative vertical vanishing point, defined as vertical vanishing point divided by image height
         Returns:
-            [float, float, float]: absolute vertical vanishing point in image frame (top left corner as 0)
+            vvp_abs ([float, float, float]): absolute vertical vanishing point in image frame (top left corner as 0), 
+            vvp_abs[2] in {-1, 1} depending on if it is south or north pole, or if the up vectors are pointing towards (+1) or away (-1) from it.
         """
         if not np.isinf(vvp).any():
             # VVP
@@ -588,7 +554,6 @@ class PanoCam:
                 [vvp_abs[0] + 0.5 * im_w - 0.5, vvp_abs[1] + 0.5 * im_h - 0.5, 1]
             )
 
-    # TODO: Ask about return
     @staticmethod
     def getRelativeVVP(elevation, roll, vfov, im_h, im_w):
         """Relative vertical vanishing point in image frame (top left corner as 0)
@@ -602,6 +567,9 @@ class PanoCam:
             im_w (int): image width
 
         Returns:
+            vvp[0] (float): x coordinate of vertical vanishing point, divided by image height.
+            vvp[1] (float): y coordinate of vertical vanishing point, divided by image height.
+            vvp[2] {-1, 1}: whether the up vectors are pointing towards (+1) or away (-1) from the vertical vanishing point.
 
         """
         if elevation == 0:
@@ -746,7 +714,7 @@ class PanoCam:
             elevation (float): camera rotation about world frame x-axis (radians)
             roll (float): rotation aboout z-axis (radians)
             cx_rel (float): relative cx location (pixel coordinate / image width - 0.5)
-            cy_rel (float): relative cy location (pixel coordinate / image width - 0.5)
+            cy_rel (float): relative cy location (pixel coordinate / image height - 0.5)
 
         Returns:
             np.ndarray: gravity field of shape (im_h, im_w, 2)
@@ -808,7 +776,7 @@ class PanoCam:
             elevation (float): camera rotation about world frame x-axis (radians)
             roll (float): rotation aboout z-axis (radians)
             cx_rel (float): relative cx location (pixel coordinate / image width - 0.5)
-            cy_rel (float): relative cy location (pixel coordinate / image width - 0.5)
+            cy_rel (float): relative cy location (pixel coordinate / image height - 0.5)
 
         Returns:
             np.ndarray: latitude map of shape (im_h, im_w) in degrees
@@ -843,7 +811,6 @@ class PanoCam:
         return l.reshape(im_h, im_w)
 
 
-# TODO: Ask about last 3 functions
 def draw_vanishing_opencv(
     img, horizon, vvp, pad=(1, 1), elevation=0, roll=0, azimuth=0, vfov=30
 ):
