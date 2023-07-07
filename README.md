@@ -14,13 +14,23 @@ CVPR 2023 (✨Highlight)
 </h4>
 <hr>
 
+<p align="center">
+
 ![alt text](assets/teaser-field.jpg)
+</p>
 We propose Perspective Fields as a representation that models the local perspective properties of an image. Perspective Fields contain per-pixel information about the camera view, parameterized as an up vector and a latitude value. 
 
+<p align="center">
 <img height="100" alt="swiping-1" src="assets/swiping-1.gif"> <img height="100" alt="swiping-2" src="assets/swiping-2.gif"> <img height="100" alt="swiping-3" src="assets/swiping-3.gif"> <img height="100" alt="swiping-4" src="assets/swiping-4.gif">
+</p>
 
 📷 From Perspective Fields, you can also get camera parameters if you assume certain camera models. We provide models to recover camera roll, pitch, fov and principal point location.
 
+<p align="center">
+  <img src="assets/vancouver/IMG_2481.jpg" alt="Image 1" height="200px" style="margin-right:10px;">
+  <img src="assets/vancouver/pred_pers.png" alt="Image 2" height="200px" style="margin-center:10px;">
+  <img src="assets/vancouver/pred_param.png" alt="Image 2" height="200px" style="margin-left:10px;">
+</p>
 
 
 Updates
