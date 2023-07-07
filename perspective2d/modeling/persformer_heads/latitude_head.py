@@ -23,9 +23,6 @@ LATITUDE_DECODERS_REGISTRY = Registry("LATITUDE_DECODER")
 
 
 def build_latitude_decoder(cfg, input_shape):
-    """
-    Build a semantic segmentation head from `cfg.MODEL.SEM_SEG_HEAD.NAME`.
-    """
     name = cfg.MODEL.LATITUDE_DECODER.NAME
     # return LATITUDE_DECODERS_REGISTRY.get(name)(cfg, input_shape)
     return LATITUDE_DECODERS_REGISTRY.get(name)(cfg, input_shape)
@@ -33,14 +30,6 @@ def build_latitude_decoder(cfg, input_shape):
 
 @LATITUDE_DECODERS_REGISTRY.register()
 class LatitudeDecoder(BaseDecodeHead):
-    """
-    A semantic segmentation head described in :paper:`PanopticFPN`.
-    It takes a list of FPN features as input, and applies a sequence of
-    3x3 convs and upsampling to scale all of them to the stride defined by
-    ``common_stride``. Then these features are added and used to make final
-    predictions by another 1x1 conv layer.
-    """
-
     @configurable
     def __init__(self, feature_strides, loss_weight, **kwargs):
         super().__init__(input_transform="multiple_select", **kwargs)

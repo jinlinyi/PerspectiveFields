@@ -1,3 +1,4 @@
+# Reference: https://github.com/aim-uofa/AdelaiDepth/tree/main/LeReS
 import torch
 from torch import nn
 from torch.nn import functional as F
@@ -27,7 +28,7 @@ def one_scale_gradient_loss(pred_scale, gt, mask):
 
 def msgil_norm_loss(pred, gt, valid_mask, scales_num=4):
     """
-    Our proposed GT normalized Multi-scale Gradient Loss Fuction.
+    GT normalized Multi-scale Gradient Loss Fuction.
     """
     grad_term = 0.0
     # gt_mean = minmax_meanstd[:, 2]

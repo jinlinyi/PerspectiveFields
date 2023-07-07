@@ -18,26 +18,12 @@ PERSFORMER_HEADS_REGISTRY = Registry("PERSFORMER_HEADS")
 
 
 def build_persformer_heads(cfg, input_shape):
-    """
-    Build ROIHeads defined by `cfg.MODEL.ROI_HEADS.NAME`.
-    """
     name = cfg.MODEL.PERSFORMER_HEADS.NAME
     return PERSFORMER_HEADS_REGISTRY.get(name)(cfg, input_shape)
 
 
 @PERSFORMER_HEADS_REGISTRY.register()
 class StandardPersformerHeads(torch.nn.Module):
-    """
-    It's "standard" in a sense that there is no ROI transform sharing
-    or feature sharing between tasks.
-    Each head independently processes the input features by each head's
-    own pooler and head.
-
-    This class is used by most models, such as FPN and C5.
-    To implement more models, you can subclass it and implement a different
-    :meth:`forward()` or a head.
-    """
-
     @configurable
     def __init__(
         self,
@@ -82,9 +68,6 @@ class StandardPersformerHeads(torch.nn.Module):
         features,
         targets=None,
     ):
-        """
-        See :class:`ROIHeads.forward`.
-        """
         losses = {}
         prediction = {}
         if self.gravity_on:

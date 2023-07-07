@@ -59,25 +59,6 @@ class ParamNet(nn.Module):
         self.loss_weight = cfg.MODEL.PARAM_DECODER.LOSS_WEIGHT
 
     def forward(self, predictions, batched_inputs=None):
-        """
-        Args:
-            batched_inputs: a list, batched outputs of :class:`DatasetMapper`.
-                Each item in the list contains the inputs for one image.
-                For now, each item in the list is a dict that contains:
-                   * "image": Tensor, image in (C, H, W) format.
-                   * "sem_seg": semantic segmentation ground truth
-                   * Other information that's included in the original dicts, such as:
-                     "height", "width" (int): the output resolution of the model (may be different
-                     from input resolution), used in inference.
-        Returns:
-            list[dict]:
-              Each dict is the output for one input image.
-              The dict contains one key "sem_seg" whose value is a
-              Tensor that represents the
-              per-pixel segmentation prediced by the head.
-              The prediction has shape KxHxW that represents the logits of
-              each class for each pixel.
-        """
         images = torch.cat(
             (predictions["pred_gravity"], predictions["pred_latitude"]), dim=1
         )

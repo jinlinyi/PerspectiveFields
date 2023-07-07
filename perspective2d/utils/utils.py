@@ -16,20 +16,29 @@ from perspective2d.utils.visualizer import VisualizerPerspective
 from .panocam import PanoCam
 
 
-# TODO: Ask about relative vs. absolute and h
 def general_vfov(d_cx, d_cy, h, focal, degree):
     """
-    Convert focal length to general vertical field of view
+    Calculate the general vertical field of view (gvfov) given the camera intrinsic parameters.
+
+    The general vertical field of view (gvfov) is a concept employed to define the field of view (FoV) for images that may be cropped or have an off-center principal point. 
+    
+    The gfov is defined as follows:
+        Consider the camera's pinhole as 'O'. Let 'M1' and 'M2' represent the midpoints of the top and bottom edges of the image, respectively. 
+        The gfov is defined as the angle subtended by the lines OM1 and OM2 at 'O'. 
+
+    This function can handle parameters given in two ways:
+    1. Relative to the image height: In this case, h should be 1, and d_cx, d_cy, and focal should be normalized by the image height.
+    2. Absolute pixel values: In this case, h should be the image height in pixels, and d_cx, d_cy, and focal should be provided in pixels.
 
     Args:
-        d_cx (float): relative cx location (pixel coordinate / image width - 0.5)
-        d_cy (float): relative cy location (pixel coordinate / image height -0.5)
-        h:
-        focal (float): relative focal length (focal length / image height)
-        degree (bool): True to return vfov in degrees, False to return in radians
+        d_cx (float): Horizontal offset of the principal point (cx) from the image center.
+        d_cy (float): Vertical offset of the principal point (cy) from the image center.
+        h (float): Image height, either relative (1) or in absolute pixel values.
+        focal (float): Focal length of the camera, either relative to the image height or in absolute pixel values.
+        degree (bool): Indicator for the FoV return unit. If True, FoV is returned in degrees. If False, it's returned in radians.
 
     Returns:
-        float: General field of view in either degrees or radians
+        float: General vertical field of view (FoV), computed based on the provided parameters and returned in either degrees or radians, depending on the 'degree' parameter.
     """
     p_sqr = focal**2 + d_cx**2 + (d_cy + 0.5 * h) ** 2
     q_sqr = focal**2 + d_cx**2 + (d_cy - 0.5 * h) ** 2
@@ -41,19 +50,32 @@ def general_vfov(d_cx, d_cy, h, focal, degree):
         return FoV_rad
 
 
-# TODO: Ask about relative vs. absolute and h
 def general_vfov_to_focal(rel_cx, rel_cy, h, gvfov, degree):
-    """Convert general vertical field of view to relative focal length
+    """
+    Converts a given general vertical field of view (gvfov) to the equivalent focal length.
+
+    The general vertical field of view (gvfov) is a concept employed to define the field of view (FoV) for images that may be cropped or have an off-center principal point. 
+    
+    The gfov is defined as follows:
+        Consider the camera's pinhole as 'O'. Let 'M1' and 'M2' represent the midpoints of the top and bottom edges of the image, respectively. 
+        The gfov is defined as the angle subtended by the lines OM1 and OM2 at 'O'. 
+
+    This function accepts parameters in either relative terms or absolute pixel values:
+    1. Relative to the image height: In this case, h should be 1, and d_cx, d_cy should be normalized by the image height. 
+    2. Absolute pixel values: In this case, h should be the image height in pixels, and d_cx, d_cy should be provided in pixels.
 
     Args:
-        rel_cx (float): relative cx location (pixel coordinate / image width - 0.5)
-        rel_cy (float): relative cy location (pixel coordinate / image height - 0.5)
-        h (flot):
-        gvfov (float): general vertical field of view
-        degree (bool): Should be set to True if input gvfov is in degrees and False if it is in radians
+        rel_cx (float): Horizontal offset of the principal point (cx) from the image center. 
+                        It's in absolute terms if h is set to image height, else it's relative (cx coordinate / image width - 0.5).
+        rel_cy (float): Vertical offset of the principal point (cy) from the image center.
+                        It's in absolute terms if h is set to image height, else it's relative (cy coordinate / image height - 0.5).
+        h (float): Image height, either in relative terms (set as 1) or as absolute pixel values.
+        gvfov (float): General vertical field of view. It's in degrees if degree is set to True, else it's in radians.
+        degree (bool): Indicator for the gvfov unit. If True, gvfov is assumed to be in degrees. If False, it's in radians.
 
     Returns:
-        float:
+        float: Focal length, derived from the input gvfov and the principal point offsets (rel_cx, rel_cy). 
+               It is relative to the image height if h is set to 1, else it's an absolute value (in pixels).
     """
 
     def fun(focal, *args):
@@ -110,22 +132,6 @@ def decode_bin(angle_bin, num_bin):
     return vector_field
 
 
-# TODO: Ask about this function
-def draw_vector_field(vector_field):
-    """_summary_
-
-    Args:
-        vector_field (_type_): _description_
-
-    Returns:
-        _type_: _description_
-    """
-    zero = torch.zeros((1, vector_field.size(1), vector_field.size(2)))
-    normal = torch.cat((vector_field, zero), 0)
-    normal = (normal + 1.0) / 2.0 * 255.0
-    return normal.long()
-
-
 def encode_bin_latitude(latimap, num_classes):
     """encode latitude map into classification bins
 
@@ -138,13 +144,6 @@ def encode_bin_latitude(latimap, num_classes):
     """
     boundaries = torch.arange(-90, 90, 180 / num_classes)[1:]
     binmap = torch.bucketize(latimap, boundaries)
-    # bin_size = 180 / (num_classes - 1)
-    # pos = torch.ceil(latimap / bin_size)
-    # neg = torch.floor(latimap / bin_size)
-    # binmap = torch.zeros(latimap.shape)
-    # binmap[latimap > 0] = pos[latimap > 0]
-    # binmap[latimap < 0] = neg[latimap < 0]
-    # binmap = binmap + (num_classes + 1) / 2 - 1
     return binmap.type(torch.LongTensor)
 
 
@@ -162,13 +161,9 @@ def decode_bin_latitude(binmap, num_classes):
     bin_centers = torch.arange(-90, 90, bin_size) + bin_size / 2
     bin_centers = bin_centers.to(binmap.device)
     latimap = bin_centers[binmap]
-    # bin_size = 180 / (num_classes - 1)
-    # latimap = (binmap - ((num_classes + 1) / 2 - 1)) * bin_size
-    # latimap = latimap - bin_size / 2 * torch.sign(latimap)
     return latimap
 
 
-# TODO: Ask about return_img
 def draw_perspective_fields(
     img_rgb, up, latimap, color=None, density=10, arrow_inv_len=20, return_img=True
 ):
@@ -187,11 +182,10 @@ def draw_perspective_fields(
         arrow_inv_len (int, optional): Value to control vector length
                                        Vector length set to (image plane diagonal // arrow_inv_len).
                                        Defaults to 20.
-        return_img (bool, optional): bool to control if the input image is returned.
-                                     Defaults to True.
+        return_img (bool, optional): bool to control if to return np array or VisImage
 
     Returns:
-        _type_: _description_
+        image blended with perspective fields.
     """
     visualizer = VisualizerPerspective(img_rgb[:, :, ::-1].copy())
     vis_output = visualizer.draw_lati(latimap)
@@ -214,7 +208,6 @@ def draw_perspective_fields(
         return vis_output
 
 
-# TODO: Ask about return_img
 def draw_up_field(
     img_rgb, vector_field, color=None, density=10, arrow_inv_len=20, return_img=True
 ):
@@ -232,11 +225,10 @@ def draw_up_field(
         arrow_inv_len (int, optional): Value to control vector length
                                        Vector length set to (image plane diagonal // arrow_inv_len).
                                        Defaults to 20.
-        return_img (bool, optional): bool to control if the input image is returned.
-                                     Defaults to True.
+        return_img (bool, optional): bool to control if to return np array or VisImage
 
     Returns:
-        _type_: _description_
+        image blended with up vectors
     """
     if torch.is_tensor(vector_field):
         vector_field = vector_field.numpy().transpose(1, 2, 0)
@@ -281,7 +273,7 @@ def draw_from_r_p_f(
         roll (float): rotation of camera about the world frame z-axis
         pitch (float): rotation of camera about the world frame x-axis
         vfov (float): vertical field of view
-        mode (str): specifies the mode of input parameters. "deg" or "radians"
+        mode (str): specifies the mode of input parameters. "deg" or "rad"
         up_color ((float, float, float), optional): RGB value of up vectors. [0, 1]. Defaults to None.
         alpha_contourf (float, optional): value to control transparency of contour fill. Defaults to 0.4.
         alpha_contour (float, optional): value to control transparency of contour lines. Defaults to 0.9.
@@ -409,7 +401,6 @@ def draw_from_r_p_f_cx_cy(
     return img
 
 
-# TODO: Ask about binmap and return_img
 def draw_latitude_field(
     img_rgb,
     latimap=None,
@@ -423,14 +414,13 @@ def draw_latitude_field(
     Args:
         img_rgb (np.ndarray): input rgb image
         latimap (np.ndarray, optional): latitude map in radians. Defaults to None.
-        binmap (_type_, optional):
+        binmap: deprecated.
         alpha_contourf (float, optional): value to control transparency of contour fill. Defaults to 0.4.
         alpha_contour (float, optional): value to control transparenct of contour lines. Defaults to 0.9.
-        return_img (bool, optional): bool to control if the input image is returned.
-                                     Defaults to True.
+        return_img (bool, optional): bool to control if to return np array or VisImage
 
     Returns:
-        _type_: _description_
+        np array or VisImage depending on return_img
     """
     visualizer = VisualizerPerspective(img_rgb[:, :, ::-1].copy())
     vis_output = visualizer.draw_lati(latimap, alpha_contourf, alpha_contour)

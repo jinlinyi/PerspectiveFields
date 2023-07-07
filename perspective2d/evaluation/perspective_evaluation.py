@@ -24,7 +24,7 @@ from .param_evaluation import ParamEvaluator
 
 class PerspectiveEvaluator(DatasetEvaluator):
     """
-    Evaluate semantic segmentation metrics.
+    Evaluate perspective fields.
     """
 
     def __init__(
@@ -34,14 +34,6 @@ class PerspectiveEvaluator(DatasetEvaluator):
         distributed=True,
         output_dir=None,
     ):
-        """
-        Args:
-            dataset_name (str): name of the dataset to be evaluated.
-            distributed (bool): if True, will collect results from all ranks for evaluation.
-                Otherwise, will evaluate the results in the current process.
-            output_dir (str): an output directory to dump results.
-            num_classes, ignore_label: deprecated argument
-        """
         self._logger = logging.getLogger(__name__)
 
         if not self._logger.isEnabledFor(logging.INFO):
@@ -54,7 +46,6 @@ class PerspectiveEvaluator(DatasetEvaluator):
         self._cpu_device = torch.device("cpu")
 
         meta = MetadataCatalog.get(dataset_name)
-        # Dict that maps contiguous training ids to COCO category ids
         try:
             c2d = meta.stuff_dataset_id_to_contiguous_id
             self._contiguous_id_to_dataset_id = {v: k for k, v in c2d.items()}
@@ -83,15 +74,6 @@ class PerspectiveEvaluator(DatasetEvaluator):
         self._predictions = []
 
     def process(self, inputs, outputs):
-        """
-        Args:
-            inputs: the inputs to a model.
-                It is a list of dicts. Each dict corresponds to an image and
-                contains keys like "height", "width", "file_name".
-            outputs: the outputs of a model. It is either list of semantic segmentation predictions
-                (Tensor [H, W]) or list of dicts with key "sem_seg" that contains semantic
-                segmentation prediction in the same format.
-        """
         for input, output in zip(inputs, outputs):
             ret = {}
             for evaluator in self.evaluators:
@@ -99,15 +81,6 @@ class PerspectiveEvaluator(DatasetEvaluator):
             self._predictions.append(ret)
 
     def evaluate(self):
-        """
-        TODO: Ask about this
-        Evaluates standard semantic segmentation metrics (http://cocodataset.org/#stuff-eval):
-
-        * Mean intersection-over-union averaged across classes (mIoU)
-        * Frequency Weighted IoU (fwIoU)
-        * Mean pixel accuracy averaged across classes (mACC)
-        * Pixel Accuracy (pACC)
-        """
         if self._distributed:
             comm.synchronize()
             predictions = comm.gather(self._predictions, dst=0)

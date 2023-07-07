@@ -50,10 +50,11 @@ class VisualizerPerspective(Visualizer):
         )
         return self.output
 
-    # TODO: Ask about this function
     def draw_lati(
         self, latimap, alpha_contourf=0.4, alpha_contour=0.9, contour_only=False
     ):
+        """Blend latitude map
+        """
         height, width = latimap.shape
         y, x = np.mgrid[0:height, 0:width]
         cmap = plt.get_cmap("seismic_r")

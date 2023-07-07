@@ -23,9 +23,8 @@ __all__ = ["PersFormer"]
 @META_ARCH_REGISTRY.register()
 class PersFormer(nn.Module):
     """
-    Main class for semantic segmentation architectures.
+    Main class for Perspective Fields
     """
-
     @configurable
     def __init__(
         self,
@@ -41,13 +40,6 @@ class PersFormer(nn.Module):
         debug_on,
         cfg,
     ):
-        """
-        Args:
-            backbone: a backbone module, must follow detectron2's backbone interface
-            sem_seg_head: a module that predicts semantic segmentation from backbone features
-            pixel_mean, pixel_std: list or tuple with #channels element, representing
-                the per-channel mean and std to be used to normalize the input image
-        """
         super().__init__()
         self.backbone = backbone
         self.ll_enc = ll_enc
@@ -102,25 +94,6 @@ class PersFormer(nn.Module):
         return self.pixel_mean.device
 
     def forward(self, batched_inputs):
-        """
-        Args:
-            batched_inputs: a list, batched outputs of :class:`DatasetMapper`.
-                Each item in the list contains the inputs for one image.
-                For now, each item in the list is a dict that contains:
-                   * "image": Tensor, image in (C, H, W) format.
-                   * "sem_seg": semantic segmentation ground truth
-                   * Other information that's included in the original dicts, such as:
-                     "height", "width" (int): the output resolution of the model (may be different
-                     from input resolution), used in inference.
-        Returns:
-            list[dict]:
-              Each dict is the output for one input image.
-              The dict contains one key "sem_seg" whose value is a
-              Tensor that represents the
-              per-pixel segmentation prediced by the head.
-              The prediction has shape KxHxW that represents the logits of
-              each class for each pixel.
-        """
         if not self.cfg.MODEL.PARAM_DECODER.SYNTHETIC_PRETRAIN:
             images = [x["image"].to(self.device) for x in batched_inputs]
             images = [(x - self.pixel_mean) / self.pixel_std for x in images]
