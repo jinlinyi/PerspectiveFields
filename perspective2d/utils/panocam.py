@@ -602,7 +602,7 @@ class PanoCam:
             (float, float): in image frame, fraction of image left/right border intersection with respect to image height
         """
         midpoint = PanoCam.getMidpointFromAngle(elevation, roll, vfov)
-        dh = PanoCam.getDeltaHeightFromRoll(elevation, roll, im_h, im_w)
+        dh = PanoCam.getDeltaHeightFromRoll(roll, im_h, im_w)
         return midpoint - dh, midpoint + dh
 
     @staticmethod
