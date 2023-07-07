@@ -43,7 +43,7 @@ Usage Instructions
 ------------------
 
 1. [Setup your environment][1]
-2. [Compute perspective fields based on pin-hole camera parameters][2]
+2. [Compute perspective fields based on camera parameters][2]
 3. [Inference on a single image][3]
 4. [Get camera parameters from Perspective Fields][4]
 5. [Train PerspectiveNet + ParamNet][5]
