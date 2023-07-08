@@ -7,39 +7,45 @@ def get_perspective2d_cfg_defaults(cfg):
     """
     cfg.INPUT.ONLINE_CROP = False
     cfg.DATALOADER.AUGMENTATION = False
-    cfg.DATALOADER.AUGMENTATION_TYPE = 'geometry'
-    cfg.DATALOADER.RESIZE = [320, 320] # Height, Width
-    cfg.DATALOADER.AUGMENTATION_FUN = 'default'
-    cfg.DATALOADER.NO_GEOMETRY_AUG = False # requested by R3 cvpr2023
+    cfg.DATALOADER.AUGMENTATION_TYPE = "geometry"
+    cfg.DATALOADER.RESIZE = [320, 320]  # Height, Width
+    cfg.DATALOADER.AUGMENTATION_FUN = "default"
+    cfg.DATALOADER.NO_GEOMETRY_AUG = False  # requested by R3 cvpr2023
 
     cfg.MODEL.GRAVITY_ON = False
     cfg.MODEL.LATITUDE_ON = False
     cfg.MODEL.RECOVER_RPF = False
     cfg.MODEL.RECOVER_PP = False
-    
+
     cfg.MODEL.PERSFORMER_HEADS = CN()
-    cfg.MODEL.PERSFORMER_HEADS.NAME = 'StandardPersformerHeads'
+    cfg.MODEL.PERSFORMER_HEADS.NAME = "StandardPersformerHeads"
     cfg.MODEL.LATITUDE_DECODER = CN()
-    cfg.MODEL.LATITUDE_DECODER.NAME = 'LatitudeDecoder'
+    cfg.MODEL.LATITUDE_DECODER.NAME = "LatitudeDecoder"
     cfg.MODEL.LATITUDE_DECODER.LOSS_WEIGHT = 1.0
-    cfg.MODEL.LATITUDE_DECODER.LOSS_TYPE = 'regression'
+    cfg.MODEL.LATITUDE_DECODER.LOSS_TYPE = "regression"
     cfg.MODEL.LATITUDE_DECODER.NUM_CLASSES = 1
     cfg.MODEL.LATITUDE_DECODER.IGNORE_VALUE = -1
     cfg.MODEL.GRAVITY_DECODER = CN()
-    cfg.MODEL.GRAVITY_DECODER.NAME = 'GravityDecoder'
-    cfg.MODEL.GRAVITY_DECODER.LOSS_WEIGHT = 1.0  
-    cfg.MODEL.GRAVITY_DECODER.LOSS_TYPE = 'classification'
+    cfg.MODEL.GRAVITY_DECODER.NAME = "GravityDecoder"
+    cfg.MODEL.GRAVITY_DECODER.LOSS_WEIGHT = 1.0
+    cfg.MODEL.GRAVITY_DECODER.LOSS_TYPE = "classification"
     cfg.MODEL.GRAVITY_DECODER.NUM_CLASSES = 73
     cfg.MODEL.GRAVITY_DECODER.IGNORE_VALUE = 72
     cfg.MODEL.HEIGHT_DECODER = CN()
-    cfg.MODEL.HEIGHT_DECODER.NAME = 'HeightDecoder'
-    cfg.MODEL.HEIGHT_DECODER.LOSS_WEIGHT = 1.0  
+    cfg.MODEL.HEIGHT_DECODER.NAME = "HeightDecoder"
+    cfg.MODEL.HEIGHT_DECODER.LOSS_WEIGHT = 1.0
 
     cfg.MODEL.PARAM_DECODER = CN()
-    cfg.MODEL.PARAM_DECODER.NAME = 'ParamNet'
-    cfg.MODEL.PARAM_DECODER.LOSS_TYPE = 'regression'
+    cfg.MODEL.PARAM_DECODER.NAME = "ParamNet"
+    cfg.MODEL.PARAM_DECODER.LOSS_TYPE = "regression"
     cfg.MODEL.PARAM_DECODER.LOSS_WEIGHT = 1.0
-    cfg.MODEL.PARAM_DECODER.PREDICT_PARAMS = ['roll', 'pitch', 'rel_focal', 'rel_cx', 'rel_cy']
+    cfg.MODEL.PARAM_DECODER.PREDICT_PARAMS = [
+        "roll",
+        "pitch",
+        "rel_focal",
+        "rel_cx",
+        "rel_cy",
+    ]
     cfg.MODEL.PARAM_DECODER.SYNTHETIC_PRETRAIN = False
     cfg.MODEL.PARAM_DECODER.INPUT_SIZE = 320
     cfg.MODEL.PARAM_DECODER.DEBUG_LAT = False
@@ -49,9 +55,8 @@ def get_perspective2d_cfg_defaults(cfg):
     cfg.DEBUG_ON = False
     cfg.OVERFIT_ON = False
 
-
     """
-    The configs below are not used. 
+    The configs below are not used.
     """
     cfg.MODEL.CENTER_ON = False
     cfg.MODEL.HEIGHT_ON = False
@@ -92,7 +97,7 @@ def get_perspective2d_cfg_defaults(cfg):
     cfg.MODEL.FPN_LATITUDE_HEAD.COMMON_STRIDE = 4
     # Normalization method for the convolution layers. Options: "" (no norm), "GN".
     cfg.MODEL.FPN_LATITUDE_HEAD.NORM = "GN"
-    cfg.MODEL.FPN_LATITUDE_HEAD.LOSS_WEIGHT = 1.0    
+    cfg.MODEL.FPN_LATITUDE_HEAD.LOSS_WEIGHT = 1.0
     # Center
 
     cfg.MODEL.FPN_CENTER_HEAD = CN()
@@ -112,6 +117,5 @@ def get_perspective2d_cfg_defaults(cfg):
     cfg.MODEL.FPN_CENTER_HEAD.LOSS_WEIGHT = 1.0
 
     ############################################################
-
 
     return cfg

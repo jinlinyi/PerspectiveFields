@@ -18,7 +18,7 @@ MODEL:
     NAME: 'ParamNetConvNextRegress'
     LOSS_TYPE: 'regression'
     PREDICT_PARAMS: ['roll', 'pitch', 'general_vfov', 'rel_cx', 'rel_cy']
-    INPUT_SIZE: 64 
+    INPUT_SIZE: 64
     LOSS_WEIGHT: 1.0
 DATASETS:
   TRAIN: ("edina_train", "cities360_train")

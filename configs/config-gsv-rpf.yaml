@@ -18,7 +18,7 @@ MODEL:
     NAME: 'ParamNet'
     LOSS_TYPE: 'regression'
     PREDICT_PARAMS: ['roll', 'pitch', 'vfov']
-    INPUT_SIZE: 64 
+    INPUT_SIZE: 64
     LOSS_WEIGHT: 1.0
 DATASETS:
   TRAIN: ("gsv_train",)

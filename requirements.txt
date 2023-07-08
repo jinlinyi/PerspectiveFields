@@ -1,23 +1,23 @@
-albumentations==1.3.0
-detectron2==0.6
-fvcore==0.1.5.post20221221
-gradio==3.29.0
-h5py==3.8.0
-imageio==2.27.0
-matplotlib==3.7.1
-mmcv==2.0.0
-numpy==1.24.2
-opencv_contrib_python==4.7.0.72
-opencv_python==4.7.0.72
-opencv_python_headless==4.7.0.72
-Pillow==9.4.0
-Pillow==9.5.0
-pycocotools==2.0.6
+torch
+torchvision
+numpy
+opencv-python
+
+# Detectron2
+git+https://github.com/facebookresearch/detectron2.git
+
+# MMCV
+openmim
+
+# Other dependencies
+openexr
+gitpython
+opencv-contrib-python
+albumentations
 pyequilib==0.3.0
-scikit_learn==1.2.2
-scipy==1.9.1
-setuptools==59.5.0
-timm==0.6.13
-torch==1.10.0
-torchvision==0.11.1
-tqdm==4.65.0
+skylibs
+timm
+h5py
+tensorboard
+setuptools
+gradio

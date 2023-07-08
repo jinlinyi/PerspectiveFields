@@ -1,10 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+import json
 import logging
 import os
-import json
+
+import numpy as np
 from detectron2.data import MetadataCatalog
 from detectron2.utils.visualizer import Visualizer
-import numpy as np
+
 """
 This file contains functions to parse COCO-format annotations into dicts in "Detectron2 format".
 """
@@ -29,22 +31,31 @@ def load_cities360_json(json_file, img_root):
         1. This function does not read the image files.
            The results do not have the "image" field.
     """
-    with open(json_file, 'r') as f:
+    with open(json_file) as f:
         summary = json.load(f)
-    for idx in range(len(summary['data'])):
-        summary['data'][idx]['file_name'] = os.path.join(img_root, summary['data'][idx]['file_name'])
-        summary['data'][idx]['dataset'] = 'cities360'
+    for idx in range(len(summary["data"])):
+        summary["data"][idx]["file_name"] = os.path.join(
+            img_root, summary["data"][idx]["file_name"]
+        )
+        summary["data"][idx]["dataset"] = "cities360"
     logger.info(f"{os.path.basename(json_file)}: {len(summary['data'])}")
-    return summary['data']
-    
+    return summary["data"]
+
+
 def load_cities360_distort_json(json_file, img_root):
-    with open(json_file, 'r') as f:
+    with open(json_file) as f:
         summary = json.load(f)
-    for idx in range(len(summary['data'])):
-        summary['data'][idx]['file_name'] = os.path.join(img_root, summary['data'][idx]['file_name'])
-        summary['data'][idx]['dataset'] = 'cities360_distort'
-        summary['data'][idx]['latitude_file_name'] = os.path.join(img_root, summary['data'][idx]['latitude_file_name'])
-        summary['data'][idx]['gravity_file_name'] = os.path.join(img_root, summary['data'][idx]['gravity_file_name'])
-        
+    for idx in range(len(summary["data"])):
+        summary["data"][idx]["file_name"] = os.path.join(
+            img_root, summary["data"][idx]["file_name"]
+        )
+        summary["data"][idx]["dataset"] = "cities360_distort"
+        summary["data"][idx]["latitude_file_name"] = os.path.join(
+            img_root, summary["data"][idx]["latitude_file_name"]
+        )
+        summary["data"][idx]["gravity_file_name"] = os.path.join(
+            img_root, summary["data"][idx]["gravity_file_name"]
+        )
+
     logger.info(f"{os.path.basename(json_file)}: {len(summary['data'])}")
-    return summary['data']
+    return summary["data"]
