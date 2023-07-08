@@ -75,31 +75,41 @@
       </td>
     </tr>
 
-    <br>
-    <table align=center width=100%>
+    <br><table align=center width=100%>
       <tr>
         <td align=center width=20%>
-          <center>
-            <span style="font-size:20px"><a href="https://huggingface.co/spaces/jinlinyi/PerspectiveFields">[<span style="color:#a00"><b>NEW</b></span>][demo]</a></span>
+          <center><a href="https://huggingface.co/spaces/jinlinyi/PerspectiveFields">
+            <img src="resources/icon/hf-logo.png" alt="Demo Icon" height="45"><br>
+            <span style="font-size:20px">demo</span></a>
           </center>
         </td>
         <td align=center width=20%>
           <center>
-            <span style="font-size:20px"><a href="https://arxiv.org/abs/2212.03239">[arXiv]</a></span>
+            <a href="https://arxiv.org/abs/2212.03239">
+              <img src="resources/icon/arxiv-logo.png" alt="Code Icon" height="45"><br>
+              <span style="font-size:20px">arXiv</span>
+            </a>
           </center>
         </td>
         <td align=center width=20%>
           <center>
-            <span style="font-size:20px"><a href="https://github.com/jinlinyi/PerspectiveFields">[code]</a></span>
+            <a href="https://github.com/jinlinyi/PerspectiveFields">
+              <img src="resources/icon/github-mark.png" alt="Code Icon" height="45"><br>
+              <span style="font-size:20px">code</span>
+            </a>
           </center>
         </td>
         <td align=center width=20%>
           <center>
-            <span style="font-size:20px"><a href="https://www.youtube.com/watch?v=sN5B_ZvMva8">[video]</a></span>
+            <a href="https://www.youtube.com/watch?v=sN5B_ZvMva8">
+              <img src="resources/icon/youtube-96.png" alt="Video Icon" height="45"><br>
+              <span style="font-size:20px">video</span>
+            </a>
           </center>
         </td>
       </tr>
     </table>
+    
     <table align=center width=100%>
     </table>
     <br>
@@ -137,11 +147,10 @@
   <center>
     <h1>Video</h1>
   </center>
-  <div>
-    <p align="center">
-      <iframe style="width: 70%; height:60%; min-width:300px" src="https://www.youtube.com/embed/sN5B_ZvMva8" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-    </p>
+  <div style="position: relative; overflow: hidden; padding-top: 56.25%; width: 100%; center">
+    <iframe style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" src="https://www.youtube.com/embed/sN5B_ZvMva8" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
   </div>
+  
 
   <!-- <div id="panorama"></div>
   <script>
@@ -157,7 +166,7 @@
 </center>
 <div>
   <p align="center">
-    Check out how Perspective Fields change w.r.t. traditional camera parameters. 
+    Check out how Perspective Fields change w.r.t. pinhole camera parameters. 
   </p>
   <p align="center">
     Roll&nbsp; &nbsp; &nbsp;<input id="valRoll" type="range" min="-40" max="40" value="0" step="10" oninput="showVal()" onchange="showVal()" />
