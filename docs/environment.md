@@ -1,17 +1,25 @@
 # Project Environment
+### Core library
+
+PerspectiveFields requires python >= 3.8 and [PyTorch](https://pytorch.org/).
+
+
+| ***Pro tip:*** *use [mamba](https://github.com/mamba-org/mamba) in place of conda for much faster installs.*
+The dependencies can be installed by running:
 ```bash
-# Python 3.9.7
+git clone git@github.com:jinlinyi/PerspectiveFields.git
+# create virtual env
 conda create -n perspective python=3.9
 conda activate perspective
-# pytorch 1.10.0 with CUDA 11.3  (see torch.version.cuda)
-conda install pytorch=1.10.0 torchvision torchaudio cudatoolkit=11.3 -c pytorch
+# install pytorch compatible to your system
+conda install pytorch torchvision cudatoolkit -c pytorch
+# conda packages
 conda install -c conda-forge openexr-python openexr
-# Detectron2
-pip install 'git+https://github.com/facebookresearch/detectron2.git'
-# others
-pip install gitpython opencv-contrib-python albumentations pyequilib==0.3.0 skylibs timm mmcv h5py tensorboard setuptools==59.5.0
-# install local packages
-cd perspectiveField
+# pip packages
+pip install -r requirements.txt
+# install mmcv with mim, I encountered some issue with pip install mmcv :(
+mim install mmcv
+# install Perspective Fields.
 pip install -e .
-cd ..
 ```
+

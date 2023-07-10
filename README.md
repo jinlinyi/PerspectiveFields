@@ -8,19 +8,30 @@ CVPR 2023 (✨Highlight)
 <h4>
 
 [Linyi Jin](https://jinlinyi.github.io/)<sup>1</sup>, [Jianming Zhang](https://jimmie33.github.io/)<sup>2</sup>, [Yannick Hold-Geoffroy](https://yannickhold.com/)<sup>2</sup>, [Oliver Wang](http://www.oliverwang.info/)<sup>2</sup>, [Kevin Matzen](http://kmatzen.com/)<sup>2</sup>, [Matthew Sticha](https://www.linkedin.com/in/matthew-sticha-746325202/)<sup>1</sup>, [David Fouhey](https://web.eecs.umich.edu/~fouhey/)<sup>1</sup>
+
 <span style="font-size: 14pt; color: #555555">
  <sup>1</sup>University of Michigan, <sup>2</sup>Adobe Research
 </span>
 </h4>
 <hr>
 
+<p align="center">
+
 ![alt text](assets/teaser-field.jpg)
+</p>
 We propose Perspective Fields as a representation that models the local perspective properties of an image. Perspective Fields contain per-pixel information about the camera view, parameterized as an up vector and a latitude value. 
 
+<p align="center">
 <img height="100" alt="swiping-1" src="assets/swiping-1.gif"> <img height="100" alt="swiping-2" src="assets/swiping-2.gif"> <img height="100" alt="swiping-3" src="assets/swiping-3.gif"> <img height="100" alt="swiping-4" src="assets/swiping-4.gif">
+</p>
 
 📷 From Perspective Fields, you can also get camera parameters if you assume certain camera models. We provide models to recover camera roll, pitch, fov and principal point location.
 
+<p align="center">
+  <img src="assets/vancouver/IMG_2481.jpg" alt="Image 1" height="200px" style="margin-right:10px;">
+  <img src="assets/vancouver/pred_pers.png" alt="Image 2" height="200px" style="margin-center:10px;">
+  <img src="assets/vancouver/pred_param.png" alt="Image 2" height="200px" style="margin-left:10px;">
+</p>
 
 
 Updates
@@ -32,7 +43,7 @@ Usage Instructions
 ------------------
 
 1. [Setup your environment][1]
-2. [Compute perspective fields based on pin-hole camera parameters][2]
+2. [Compute perspective fields based on camera parameters][2]
 3. [Inference on a single image][3]
 4. [Get camera parameters from Perspective Fields][4]
 5. [Train PerspectiveNet + ParamNet][5]
