@@ -25,7 +25,7 @@ We propose Perspective Fields as a representation that models the local perspect
 
 Updates
 ------------------
-- We release a new model trained on [360cities](https://www.360cities.net/) and [EDINA](https://github.com/tien-d/EgoDepthNormal/blob/main/README_dataset.md) dataset, consisting of indoor🏠, outdoor🏙️, nature🌳, and egocentric👋 data!
+- We released a new model trained on [360cities](https://www.360cities.net/) and [EDINA](https://github.com/tien-d/EgoDepthNormal/blob/main/README_dataset.md) dataset, consisting of indoor🏠, outdoor🏙️, nature🌳, and egocentric👋 data!
 - Live demo released 🤗. https://huggingface.co/spaces/jinlinyi/PerspectiveFields. Thanks Huggingface for funding this demo!
 
 Usage Instructions
@@ -43,7 +43,7 @@ Usage Instructions
 [3]: ./jupyter-notebooks/predict_perspective_fields.ipynb
 [4]: ./jupyter-notebooks/perspective_paramnet.ipynb
 [5]: ./docs/train.md
-[6]: README.md
+[6]: ./docs/test.md
 
 
 Citation
