@@ -47,7 +47,7 @@ Usage Instructions
 3. [Inference on a single image][3]
 4. [Get camera parameters from Perspective Fields][4]
 5. [Train PerspectiveNet + ParamNet][5]
-6. [Test][6]
+6. [Test PerspectiveNet + ParamNet][6]
 7. [Model Zoo][7]
 
 [1]: ./docs/environment.md
