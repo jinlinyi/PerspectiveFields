@@ -47,7 +47,8 @@ Usage Instructions
 3. [Inference on a single image][3]
 4. [Get camera parameters from Perspective Fields][4]
 5. [Train PerspectiveNet + ParamNet][5]
-6. [Test (TODO)][6]
+6. [Test][6]
+7. [Models][7]
 
 [1]: ./docs/environment.md
 [2]: ./jupyter-notebooks/camera2perspective.ipynb
@@ -55,6 +56,7 @@ Usage Instructions
 [4]: ./jupyter-notebooks/perspective_paramnet.ipynb
 [5]: ./docs/train.md
 [6]: ./docs/test.md
+[7]: ./docs/models.md
 
 
 Citation
