@@ -48,7 +48,7 @@ Usage Instructions
 4. [Get camera parameters from Perspective Fields][4]
 5. [Train PerspectiveNet + ParamNet][5]
 6. [Test][6]
-7. [Models][7]
+7. [Model Zoo][7]
 
 [1]: ./docs/environment.md
 [2]: ./jupyter-notebooks/camera2perspective.ipynb
