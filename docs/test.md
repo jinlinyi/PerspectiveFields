@@ -3,14 +3,15 @@
 
 In our paper, we tested the **PersNet-360Cities** model on images from publicly available datasets [Stanford2D3D](http://buildingparser.stanford.edu/dataset.html) and [TartanAir](http://theairlab.org/tartanair-dataset/). Results can be found in Table 1.
 
-Download Stanford2d3d dataset:
+To download Stanford2d3d dataset:
+First agree to their data sharing and usage term: [link](https://docs.google.com/forms/d/e/1FAIpQLScFR0U8WEUtb7tgjOhhnl31OrkEs73-Y8bQwPeXgebqVKNMpQ/viewform?c=0&w=1). 
 ```bash
-wget https://www.dropbox.com/sh/ycd4hv0t1nqagub/AACjqZ2emGw7L-aAJ1rmpX4-a?dl=0
+https://www.dropbox.com/sh/ycd4hv0t1nqagub/AACjqZ2emGw7L-aAJ1rmpX4-a
 ```
 
 Download TartanAir dataset:
 ```bash
-wget https://www.dropbox.com/sh/7tev8uqnnjfhzhb/AAD9y_d1DCcoZ-AQDEQ1tn0Ua?dl=0
+https://www.dropbox.com/sh/7tev8uqnnjfhzhb/AAD9y_d1DCcoZ-AQDEQ1tn0Ua
 ```
 Extract the datasets under `perspectiveField/datasets`.
 
