@@ -31,9 +31,9 @@ def create_rotation_matrix(
 ) -> np.ndarray:
     r"""Create rotation matrix from extrinsic parameters
     Args:
-        roll (float): camera rotation about world frame z-axis
-        pitch (float): camera rotation about world frame x-axis
-        yaw (float): camera rotation about world frame y-axis
+        roll (float): camera rotation about camera frame z-axis
+        pitch (float): camera rotation about camera frame x-axis
+        yaw (float): camera rotation about camera frame y-axis
 
     Returns:
         np.ndarray: rotation R_z @ R_x @ R_y
@@ -155,9 +155,9 @@ class PanoCam:
             vfov (float): vertical field of view of cropped image (degrees)
             im_w (int): width of cropped image
             im_h (int): height of cropped image
-            azimuth (float): camera rotation about world frame y-axis of cropped image (degrees)
-            elevation (float): camera rotation about world frame x-axis of cropped image (degrees)
-            roll (float): camera rotation about world frame z-axis of cropped image (degrees)
+            azimuth (float): camera rotation about camera frame y-axis of cropped image (degrees)
+            elevation (float): camera rotation about camera frame x-axis of cropped image (degrees)
+            roll (float): camera rotation about camera frame z-axis of cropped image (degrees)
             ar (float): aspect ratio of cropped image
             img_format (str): format to return image
 
@@ -199,6 +199,371 @@ class PanoCam:
         )
         return crop, horizon, vvp
 
+
+    @staticmethod
+    def crop_equi(equi_img, vfov, im_w, im_h, azimuth, elevation, roll, ar, mode):
+        """
+        Crop a perspective image from an equirectangular image with specified camera parameters
+        camera frame: x right, y down, z out.
+        image frame: u right, v down, origin at top left
+
+        Args:
+            equi_img (np.ndarray): equirectangular image
+            vfov (float): vertical field of view of cropped image (degrees)
+            im_w (int): width of cropped image
+            im_h (int): height of cropped image
+            azimuth (float): camera rotation about camera frame y-axis of cropped image (degrees)
+            elevation (float): camera rotation about camera frame x-axis of cropped image (degrees)
+            roll (float): camera rotation about camera frame z-axis of cropped image (degrees)
+            ar (float): aspect ratio od cropped image
+            mode (str): sampling mode for grid sample
+        Returns:
+            crop (np.ndarray): Cropped perspective image
+        """
+        fov_x = float(
+            2 * np.arctan(np.tan(vfov * np.pi / 180.0 / 2) * ar) * 180 / np.pi
+        )
+
+        # Switch to https://github.com/haruishi43/equilib#coordinate-system
+        rot = {
+            "roll": float(roll / 180 * np.pi),
+            "pitch": -float(elevation / 180 * np.pi),  # rotate vertical
+            "yaw": -float(azimuth / 180 * np.pi),  # rotate horizontal
+        }
+        # Preprocess
+        if len(equi_img.shape) == 3:
+            equi_img_processed = equi_img.transpose(2, 0, 1)
+        else:
+            equi_img_processed = equi_img[None, :, :]
+        equi_img_processed = torch.FloatTensor(equi_img_processed)
+
+        # Run equi2pers
+        crop = equi2pers(
+            equi=equi_img_processed,
+            rot=rot,
+            w_pers=im_w,
+            h_pers=im_h,
+            fov_x=fov_x,
+            skew=0.0,
+            sampling_method="default",
+            mode=mode,
+        )
+        if len(crop.shape) > 2:
+            crop = np.asarray(crop.to("cpu").numpy(), dtype=equi_img.dtype)
+            crop = np.transpose(crop, (1, 2, 0))
+        else:
+            crop = np.asarray(crop.to("cpu").numpy(), dtype=equi_img.dtype)
+        return crop
+
+
+    @staticmethod
+    def getGravityField(im_h, im_w, absvvp):
+        """
+        Retrieve gravity field from absolute vertical vanishing point
+
+        Args:
+            im_h (int): image height
+            im_w (int): image width
+            absvvp ([float, float, float]): Absolute vertical vanishing point in image frame (top left corner as 0)
+
+        Returns:
+            np.ndarray: gravity field of shape (im_h, im_w, 2)
+        """
+        assert not np.isinf(absvvp).any()
+        # arrow
+        gridx, gridy = np.meshgrid(
+            np.arange(0, im_w),
+            np.arange(0, im_h),
+        )
+        start = np.stack((gridx.reshape(-1), gridy.reshape(-1))).T
+        arrow = normalize(absvvp[:2] - start) * absvvp[2]
+        arrow_map = arrow.reshape(im_h, im_w, 2)
+        return arrow_map
+
+
+    @staticmethod
+    def getAbsVVP(im_h, im_w, horizon, vvp):
+        """get absolute vertical vanishing point from horizon line and relative vertical vanishing point
+
+        Args:
+            im_h (int): image height
+            im_w (int): image width
+            horizon ([float, float]): fraction of image left/right border intersection with respect to image height
+            vvp ([float, float, {-1, 1}]): relative vertical vanishing point, defined as vertical vanishing point divided by image height
+        Returns:
+            vvp_abs ([float, float, float]): absolute vertical vanishing point in image frame (top left corner as 0), 
+            vvp_abs[2] in {-1, 1} depending on if it is south or north pole, or if the up vectors are pointing towards (+1) or away (-1) from it.
+        """
+        if not np.isinf(vvp).any():
+            # VVP
+            vvp_abs = np.array([vvp[0] * im_w, vvp[1] * im_h])
+            return np.array([vvp_abs[0], vvp_abs[1], vvp[2]])
+        else:
+            # approximate
+            vvp_abs = (
+                1e8
+                * normalize(np.array([[im_h * (horizon[1] - horizon[0]), -im_w]]))[0]
+            )
+            return np.array(
+                [vvp_abs[0] + 0.5 * im_w - 0.5, vvp_abs[1] + 0.5 * im_h - 0.5, 1]
+            )
+
+    @staticmethod
+    def getRelativeVVP(elevation, roll, vfov, im_h, im_w):
+        """Relative vertical vanishing point in image frame (top left corner as 0)
+           Defined as vertical vanishing point divided by image height
+
+        Args:
+            elevation (float): camera rotation about camera frame x-axis (radians)
+            roll (float): camera rotation about camera frame z-axis (radians)
+            vfov (float): vertical field of view (radians)
+            im_h (int): image height
+            im_w (int): image width
+
+        Returns:
+            vvp[0] (float): x coordinate of vertical vanishing point, divided by image height.
+            vvp[1] (float): y coordinate of vertical vanishing point, divided by image height.
+            vvp[2] {-1, 1}: whether the up vectors are pointing towards (+1) or away (-1) from the vertical vanishing point.
+
+        """
+        if elevation == 0:
+            return (
+                np.inf,
+                np.inf,
+            )
+        vx = (
+            0.5
+            - 0.5 / im_w
+            - 0.5 * np.sin(roll) / np.tan(elevation) / np.tan(vfov / 2) * im_h / im_w
+        )
+        vy = (
+            0.5 - 0.5 / im_h - 0.5 * np.cos(roll) / np.tan(elevation) / np.tan(vfov / 2)
+        )
+        return vx, vy, np.sign(elevation)
+
+    @staticmethod
+    def getRelativeHorizonLineFromAngles(elevation, roll, vfov, im_h, im_w):
+        """Get relative horizon line from camera parameters
+
+        Args:
+            elevation (float): camera rotation about camera frame x-axis (radians)
+            roll (float): camera rotation about camera frame z-axis (radians)
+            vfov (float): vertical field of view (radians)
+            im_h (int): image height
+            im_w (int): image width
+
+        Returns:
+            (float, float): in image frame, fraction of image left/right border intersection with respect to image height
+        """
+        midpoint = PanoCam.getMidpointFromAngle(elevation, roll, vfov)
+        dh = PanoCam.getDeltaHeightFromRoll(roll, im_h, im_w)
+        return midpoint - dh, midpoint + dh
+
+    @staticmethod
+    def getMidpointFromAngle(elevation, roll, vfov):
+        """get midpoint of the horizon line from roll, pitch, and vertical field of view
+
+        Args:
+            elevation (float): camera rotation about camera frame x-axis (radians)
+            roll (float): camera rotation about camera frame z-axis (radians)
+            vfov (float): vertical field of view (radians)
+
+        Returns:
+            float: location of the midpoint of the horizon line with respect to the image height
+        """
+        if elevation == np.pi / 2 or elevation == -np.pi / 2:
+            return np.inf * np.sign(elevation)
+        return 0.5 + 0.5 * np.tan(elevation) / np.cos(roll) / np.tan(vfov / 2)
+
+    @staticmethod
+    def getDeltaHeightFromRoll(roll, im_h, im_w):
+        """
+        Args:
+            roll (float): camera rotation about camera frame z-axis (radians)
+            im_h (int): image height
+            im_w (int): image width
+
+        Returns:
+            float: the height distance of horizon from the midpoint at image left/right border intersection.
+        """
+        if roll == np.pi / 2 or roll == -np.pi / 2:
+            return np.inf * np.sign(roll)
+        return -im_w / im_h * np.tan(roll) / 2
+
+    @staticmethod
+    def get_lat(vfov, im_w, im_h, elevation, roll):
+        """get latitude map from camera parameters
+
+        Args:
+            vfov (float): vertical field of view (radians)
+            im_w (int): image width
+            im_h (int): image height
+            elevation (float): camera rotation about camera frame x-axis (radians)
+            roll (float): camera rotation aboout camera frame z-axis (radians)
+
+        Returns:
+            np.ndarray: latitude map of shape (im_h, im_w) in degrees
+        """
+        focal_length = im_h / 2 / np.tan(vfov / 2)
+
+        # Uniform sampling on the plane
+        dy = np.linspace(-im_h / 2, im_h / 2, im_h)
+        dx = np.linspace(-im_w / 2, im_w / 2, im_w)
+        x, y = np.meshgrid(dx, dy)
+
+        x, y = x.ravel() / focal_length, y.ravel() / focal_length
+        focal_length = 1
+        x_world = x * np.cos(roll) - y * np.sin(roll)
+        y_world = (
+            x * np.cos(elevation) * np.sin(roll)
+            + y * np.cos(elevation) * np.cos(roll)
+            - focal_length * np.sin(elevation)
+        )
+        z_world = (
+            x * np.sin(elevation) * np.sin(roll)
+            + y * np.sin(elevation) * np.cos(roll)
+            + focal_length * np.cos(elevation)
+        )
+        l = -np.arctan2(y_world, np.sqrt(x_world**2 + z_world**2)) / np.pi * 180
+
+        return l.reshape(im_h, im_w)
+
+    @staticmethod
+    def get_up(vfov, im_w, im_h, elevation, roll):
+        """get gravity field from camera parameters
+
+        Args:
+            vfov (float): vertical field of view (radians)
+            im_w (int): image width
+            im_h (int): image height
+            elevation (float): camera rotation about camera frame x-axis (radians)
+            roll (float): camera rotation rotation aboout camera frame z-axis (radians)
+
+        Returns:
+            np.ndarray: gravity field of shape (im_h, im_w, 2)
+        """
+        horizon = PanoCam.getRelativeHorizonLineFromAngles(
+            elevation=elevation, roll=roll, vfov=vfov, im_h=im_h, im_w=im_w
+        )
+        vvp = PanoCam.getRelativeVVP(
+            elevation=elevation, roll=roll, vfov=vfov, im_h=im_h, im_w=im_w
+        )
+        absvvp = PanoCam.getAbsVVP(im_h=im_h, im_w=im_w, horizon=horizon, vvp=vvp)
+
+        gridx, gridy = np.meshgrid(np.arange(0, im_w), np.arange(0, im_h))
+        start = np.stack((gridx.reshape(-1), gridy.reshape(-1))).T
+        arrow = normalize(absvvp[:2] - start) * absvvp[2]
+        gt_up = arrow.reshape(im_h, im_w, 2)
+        return gt_up
+
+    @staticmethod
+    def get_up_general(focal_rel, im_w, im_h, elevation, roll, cx_rel, cy_rel):
+        """get gravity field from camera parameters.
+           no assumptions about centered principal point.
+
+        Args:
+            focal_rel (float): relative focal length, defined as focal length divided by image height
+            im_w (int): image width
+            im_h (int): image height
+            elevation (float): camera rotation about camera frame x-axis (radians)
+            roll (float): rotation aboout z-axis (radians)
+            cx_rel (float): relative cx location (pixel coordinate / image width - 0.5)
+            cy_rel (float): relative cy location (pixel coordinate / image height - 0.5)
+
+        Returns:
+            np.ndarray: gravity field of shape (im_h, im_w, 2)
+        """
+        cx = (cx_rel + 0.5) * im_w
+        cy = (cy_rel + 0.5) * im_h
+        X = (
+            np.linspace((-0.5 * im_w) + 0.5, (0.5 * im_w) - 0.5, im_w)
+            .reshape(1, im_w)
+            .repeat(im_h, 0)
+            .astype(np.float32)
+            + 0.5 * im_w
+        )
+        Y = (
+            np.linspace((-0.5 * im_h) + 0.5, (0.5 * im_h) - 0.5, im_h)
+            .reshape(im_h, 1)
+            .repeat(im_w, 1)
+            .astype(np.float32)
+            + 0.5 * im_h
+        )
+        xy_cam = np.stack([X, Y], axis=2)
+        focal_length = focal_rel * im_h
+
+        if elevation == 0:
+            up_vecs = np.ones(xy_cam.shape) * np.array(
+                [[-np.sin(roll)], [-np.cos(roll)]]
+            ).reshape((1, 2))
+        else:
+            vvp = np.array(
+                [
+                    [
+                        (np.sin(roll) * np.cos(elevation) * focal_length)
+                        / -np.sin(elevation)
+                        + (cx)
+                    ],
+                    [
+                        (np.cos(roll) * np.cos(elevation) * focal_length)
+                        / -np.sin(elevation)
+                        + (cy)
+                    ],
+                ]
+            ).reshape((1, 2))
+            up_vecs = vvp - xy_cam
+            up_vecs = up_vecs * np.sign(elevation)
+
+        up_vecs_norm = np.linalg.norm(up_vecs, axis=2)[:, :, None]
+        up_vecs = up_vecs / up_vecs_norm
+        return up_vecs
+
+    @staticmethod
+    def get_lat_general(focal_rel, im_w, im_h, elevation, roll, cx_rel, cy_rel):
+        """get latitude map from camera parameters.
+           no assumptions about centered principal point.
+
+        Args:
+            focal_rel (float): relative focal length, defined as focal length divided by image height
+            im_w (int): image width
+            im_h (int): image height
+            elevation (float): camera rotation about camera frame x-axis (radians)
+            roll (float): rotation aboout z-axis (radians)
+            cx_rel (float): relative cx location (pixel coordinate / image width - 0.5)
+            cy_rel (float): relative cy location (pixel coordinate / image height - 0.5)
+
+        Returns:
+            np.ndarray: latitude map of shape (im_h, im_w) in degrees
+        """
+        # Uniform sampling on the plane
+        focal_length = focal_rel * im_h
+        cx = (cx_rel + 0.5) * im_w
+        cy = (cy_rel + 0.5) * im_h
+        dy = np.linspace(
+            (-im_h / 2) - (cy - (im_h / 2)), (im_h / 2) - (cy - (im_h / 2)), im_h
+        )
+        dx = np.linspace(
+            (-im_w / 2) - (cx - (im_w / 2)), (im_w / 2) - (cx - (im_w / 2)), im_w
+        )
+        x, y = np.meshgrid(dx, dy)
+
+        x, y = (x.ravel() / focal_length), (y.ravel() / focal_length)
+        focal_length = 1
+        x_world = x * np.cos(roll) - y * np.sin(roll)
+        y_world = (
+            x * np.cos(elevation) * np.sin(roll)
+            + y * np.cos(elevation) * np.cos(roll)
+            - focal_length * np.sin(elevation)
+        )
+        z_world = (
+            x * np.sin(elevation) * np.sin(roll)
+            + y * np.sin(elevation) * np.cos(roll)
+            + focal_length * np.cos(elevation)
+        )
+        l = -np.arctan2(y_world, np.sqrt(x_world**2 + z_world**2)) / np.pi * 180
+
+        return l.reshape(im_h, im_w)
+    
     @staticmethod
     def crop_distortion(image360_path, f, xi, H, W, az, el, roll):
         """
@@ -211,9 +576,9 @@ class PanoCam:
             xi:
             H (int): height of cropped image
             W (int): width of cropped image
-            az: camera rotation about world frame y-axis of cropped image (degrees)
-            el: camera rotation about world frame x-axis of cropped image (degrees)
-            roll: camera rotation about world frame z-axis of cropped image (degrees)
+            az: camera rotation about camera frame y-axis of cropped image (degrees)
+            el: camera rotation about camera frame x-axis of cropped image (degrees)
+            roll: camera rotation about camera frame z-axis of cropped image (degrees)
         Returns:
             im (np.ndarray): cropped, distorted image
         """
@@ -399,417 +764,6 @@ class PanoCam:
 
         return im, ntheta, nphi, offset, up, lat, xy_map
 
-    @staticmethod
-    def crop_equi(equi_img, vfov, im_w, im_h, azimuth, elevation, roll, ar, mode):
-        """
-        Crop a perspective image from an equirectangular image with specified camera parameters
-        camera frame: x right, y down, z out.
-        image frame: u right, v down, origin at top left
-
-        Args:
-            equi_img (np.ndarray): equirectangular image
-            vfov (float): vertical field of view of cropped image (degrees)
-            im_w (int): width of cropped image
-            im_h (int): height of cropped image
-            azimuth (float): camera rotation about world frame y-axis of cropped image (degrees)
-            elevation (float): camera rotation about world frame x-axis of cropped image (degrees)
-            roll (float): camera rotation about world frame z-axis of cropped image (degrees)
-            ar (float): aspect ratio od cropped image
-            mode (str): sampling mode for grid sample
-        Returns:
-            crop (np.ndarray): Cropped perspective image
-        """
-        fov_x = float(
-            2 * np.arctan(np.tan(vfov * np.pi / 180.0 / 2) * ar) * 180 / np.pi
-        )
-
-        # Switch to https://github.com/haruishi43/equilib#coordinate-system
-        rot = {
-            "roll": float(roll / 180 * np.pi),
-            "pitch": -float(elevation / 180 * np.pi),  # rotate vertical
-            "yaw": -float(azimuth / 180 * np.pi),  # rotate horizontal
-        }
-        # Preprocess
-        if len(equi_img.shape) == 3:
-            equi_img_processed = equi_img.transpose(2, 0, 1)
-        else:
-            equi_img_processed = equi_img[None, :, :]
-        equi_img_processed = torch.FloatTensor(equi_img_processed)
-
-        # Run equi2pers
-        crop = equi2pers(
-            equi=equi_img_processed,
-            rot=rot,
-            w_pers=im_w,
-            h_pers=im_h,
-            fov_x=fov_x,
-            skew=0.0,
-            sampling_method="default",
-            mode=mode,
-        )
-        if len(crop.shape) > 2:
-            crop = np.asarray(crop.to("cpu").numpy(), dtype=equi_img.dtype)
-            crop = np.transpose(crop, (1, 2, 0))
-        else:
-            crop = np.asarray(crop.to("cpu").numpy(), dtype=equi_img.dtype)
-        return crop
-
-    @staticmethod
-    def get_latitude(
-        vfov=85, im_w=640, im_h=480, azimuth=0, elevation=30, roll=0, colormap=None
-    ):
-        """
-        Convert camera params to latitude map
-
-        Args:
-            vfov (float): vertical field of view (degrees)
-            im_w (int): image width
-            im_h (int): image height
-            azimuth (float): camera rotation about the world frame y-axis
-            elevation (float): camera rotation about the world frame x-axis (degrees)
-            roll (float): camera rotation about the world frame z-axis (degrees)
-            colormap (str): return original value if None or colored latitude map
-
-        Returns:
-            np.ndarray: latitude map of shape (im_h, im_w)
-        """
-        focal_length = im_h / 2 / np.tan(vfov * np.pi / 180.0 / 2)
-
-        # Uniform sampling on the plane
-        dy = np.linspace(-im_h / 2, im_h / 2, im_h)
-        dx = np.linspace(-im_w / 2, im_w / 2, im_w)
-        x, y = np.meshgrid(dx, dy)
-
-        x, y = x.ravel() / focal_length, y.ravel() / focal_length
-        f = np.ones_like(x)
-        p_im = np.stack((x, y, f))
-
-        rotation_m = create_rotation_matrix(
-            roll=roll / 180 * np.pi,
-            pitch=elevation / 180 * np.pi,
-            yaw=azimuth / 180 * np.pi,
-        )
-
-        p_world = np.linalg.inv(rotation_m) @ p_im
-        l = (
-            -np.arctan(p_world[1, :] / np.sqrt(p_world[0, :] ** 2 + p_world[2, :] ** 2))
-            * 180
-            / np.pi
-        )
-        if colormap is None:
-            return l.reshape(im_h, im_w)
-        else:
-            cmap = getattr(cm, colormap)
-            return cmap((l / 90 + 1) / 2).reshape(im_h, im_w, 4)
-
-    @staticmethod
-    def getGravityField(im_h, im_w, absvvp):
-        """
-        Retrieve gravity field from absolute vertical vanishing point
-
-        Args:
-            im_h (int): image height
-            im_w (int): image width
-            absvvp ([float, float, float]): Absolute vertical vanishing point in image frame (top left corner as 0)
-
-        Returns:
-            np.ndarray: gravity field of shape (im_h, im_w, 2)
-        """
-        assert not np.isinf(absvvp).any()
-        # arrow
-        gridx, gridy = np.meshgrid(
-            np.arange(0, im_w),
-            np.arange(0, im_h),
-        )
-        start = np.stack((gridx.reshape(-1), gridy.reshape(-1))).T
-        arrow = normalize(absvvp[:2] - start) * absvvp[2]
-        arrow_map = arrow.reshape(im_h, im_w, 2)
-        return arrow_map
-
-
-    @staticmethod
-    def getAbsVVP(im_h, im_w, horizon, vvp):
-        """get absolute vertical vanishing point from horizon line and relative vertical vanishing point
-
-        Args:
-            im_h (int): image height
-            im_w (int): image width
-            horizon ([float, float]): fraction of image left/right border intersection with respect to image height
-            vvp ([float, float, {-1, 1}]): relative vertical vanishing point, defined as vertical vanishing point divided by image height
-        Returns:
-            vvp_abs ([float, float, float]): absolute vertical vanishing point in image frame (top left corner as 0), 
-            vvp_abs[2] in {-1, 1} depending on if it is south or north pole, or if the up vectors are pointing towards (+1) or away (-1) from it.
-        """
-        if not np.isinf(vvp).any():
-            # VVP
-            vvp_abs = np.array([vvp[0] * im_w, vvp[1] * im_h])
-            return np.array([vvp_abs[0], vvp_abs[1], vvp[2]])
-        else:
-            # approximate
-            vvp_abs = (
-                1e8
-                * normalize(np.array([[im_h * (horizon[1] - horizon[0]), -im_w]]))[0]
-            )
-            return np.array(
-                [vvp_abs[0] + 0.5 * im_w - 0.5, vvp_abs[1] + 0.5 * im_h - 0.5, 1]
-            )
-
-    @staticmethod
-    def getRelativeVVP(elevation, roll, vfov, im_h, im_w):
-        """Relative vertical vanishing point in image frame (top left corner as 0)
-           Defined as vertical vanishing point divided by image height
-
-        Args:
-            elevation (float): camera rotation about world frame x-axis (radians)
-            roll (float): camera rotation about world frame z-axis (radians)
-            vfov (float): vertical field of view (radians)
-            im_h (int): image height
-            im_w (int): image width
-
-        Returns:
-            vvp[0] (float): x coordinate of vertical vanishing point, divided by image height.
-            vvp[1] (float): y coordinate of vertical vanishing point, divided by image height.
-            vvp[2] {-1, 1}: whether the up vectors are pointing towards (+1) or away (-1) from the vertical vanishing point.
-
-        """
-        if elevation == 0:
-            return (
-                np.inf,
-                np.inf,
-            )
-        vx = (
-            0.5
-            - 0.5 / im_w
-            - 0.5 * np.sin(roll) / np.tan(elevation) / np.tan(vfov / 2) * im_h / im_w
-        )
-        vy = (
-            0.5 - 0.5 / im_h - 0.5 * np.cos(roll) / np.tan(elevation) / np.tan(vfov / 2)
-        )
-        return vx, vy, np.sign(elevation)
-
-    @staticmethod
-    def getRelativeHorizonLineFromAngles(elevation, roll, vfov, im_h, im_w):
-        """Get relative horizon line from camera parameters
-
-        Args:
-            elevation (float): camera rotation about world frame x-axis (radians)
-            roll (float): camera rotation about world frame z-axis (radians)
-            vfov (float): vertical field of view (radians)
-            im_h (int): image height
-            im_w (int): image width
-
-        Returns:
-            (float, float): in image frame, fraction of image left/right border intersection with respect to image height
-        """
-        midpoint = PanoCam.getMidpointFromAngle(elevation, roll, vfov)
-        dh = PanoCam.getDeltaHeightFromRoll(roll, im_h, im_w)
-        return midpoint - dh, midpoint + dh
-
-    @staticmethod
-    def getMidpointFromAngle(elevation, roll, vfov):
-        """get midpoint of the horizon line from roll, pitch, and vertical field of view
-
-        Args:
-            elevation (float): camera rotation about world frame x-axis (radians)
-            roll (float): camera rotation about world frame z-axis (radians)
-            vfov (float): vertical field of view (radians)
-
-        Returns:
-            float: location of the midpoint of the horizon line with respect to the image height
-        """
-        if elevation == np.pi / 2 or elevation == -np.pi / 2:
-            return np.inf * np.sign(elevation)
-        return 0.5 + 0.5 * np.tan(elevation) / np.cos(roll) / np.tan(vfov / 2)
-
-    @staticmethod
-    def getDeltaHeightFromRoll(roll, im_h, im_w):
-        """
-        Args:
-            roll (float): camera rotation about world frame z-axis (radians)
-            im_h (int): image height
-            im_w (int): image width
-
-        Returns:
-            float: the height distance of horizon from the midpoint at image left/right border intersection.
-        """
-        if roll == np.pi / 2 or roll == -np.pi / 2:
-            return np.inf * np.sign(roll)
-        return -im_w / im_h * np.tan(roll) / 2
-
-    @staticmethod
-    def get_lat(vfov, im_w, im_h, elevation, roll):
-        """get latitude map from camera parameters
-
-        Args:
-            vfov (float): vertical field of view (radians)
-            im_w (int): image width
-            im_h (int): image height
-            elevation (float): camera rotation about world frame x-axis (radians)
-            roll (float): camera rotation aboout world frame z-axis (radians)
-
-        Returns:
-            np.ndarray: latitude map of shape (im_h, im_w) in degrees
-        """
-        focal_length = im_h / 2 / np.tan(vfov / 2)
-
-        # Uniform sampling on the plane
-        dy = np.linspace(-im_h / 2, im_h / 2, im_h)
-        dx = np.linspace(-im_w / 2, im_w / 2, im_w)
-        x, y = np.meshgrid(dx, dy)
-
-        x, y = x.ravel() / focal_length, y.ravel() / focal_length
-        focal_length = 1
-        x_world = x * np.cos(roll) - y * np.sin(roll)
-        y_world = (
-            x * np.cos(elevation) * np.sin(roll)
-            + y * np.cos(elevation) * np.cos(roll)
-            - focal_length * np.sin(elevation)
-        )
-        z_world = (
-            x * np.sin(elevation) * np.sin(roll)
-            + y * np.sin(elevation) * np.cos(roll)
-            + focal_length * np.cos(elevation)
-        )
-        l = -np.arctan2(y_world, np.sqrt(x_world**2 + z_world**2)) / np.pi * 180
-
-        return l.reshape(im_h, im_w)
-
-    @staticmethod
-    def get_up(vfov, im_w, im_h, elevation, roll):
-        """get gravity field from camera parameters
-
-        Args:
-            vfov (float): vertical field of view (radians)
-            im_w (int): image width
-            im_h (int): image height
-            elevation (float): camera rotation about world frame x-axis (radians)
-            roll (float): camera rotation rotation aboout world frame z-axis (radians)
-
-        Returns:
-            np.ndarray: gravity field of shape (im_h, im_w, 2)
-        """
-        horizon = PanoCam.getRelativeHorizonLineFromAngles(
-            elevation=elevation, roll=roll, vfov=vfov, im_h=im_h, im_w=im_w
-        )
-        vvp = PanoCam.getRelativeVVP(
-            elevation=elevation, roll=roll, vfov=vfov, im_h=im_h, im_w=im_w
-        )
-        absvvp = PanoCam.getAbsVVP(im_h=im_h, im_w=im_w, horizon=horizon, vvp=vvp)
-
-        gridx, gridy = np.meshgrid(np.arange(0, im_w), np.arange(0, im_h))
-        start = np.stack((gridx.reshape(-1), gridy.reshape(-1))).T
-        arrow = normalize(absvvp[:2] - start) * absvvp[2]
-        gt_up = arrow.reshape(im_h, im_w, 2)
-        return gt_up
-
-    @staticmethod
-    def get_up_general(focal_rel, im_w, im_h, elevation, roll, cx_rel, cy_rel):
-        """get gravity field from camera parameters.
-           no assumptions about centered principal point.
-
-        Args:
-            focal_rel (float): relative focal length, defined as focal length divided by image height
-            im_w (int): image width
-            im_h (int): image height
-            elevation (float): camera rotation about world frame x-axis (radians)
-            roll (float): rotation aboout z-axis (radians)
-            cx_rel (float): relative cx location (pixel coordinate / image width - 0.5)
-            cy_rel (float): relative cy location (pixel coordinate / image height - 0.5)
-
-        Returns:
-            np.ndarray: gravity field of shape (im_h, im_w, 2)
-        """
-        cx = (cx_rel + 0.5) * im_w
-        cy = (cy_rel + 0.5) * im_h
-        X = (
-            np.linspace((-0.5 * im_w) + 0.5, (0.5 * im_w) - 0.5, im_w)
-            .reshape(1, im_w)
-            .repeat(im_h, 0)
-            .astype(np.float32)
-            + 0.5 * im_w
-        )
-        Y = (
-            np.linspace((-0.5 * im_h) + 0.5, (0.5 * im_h) - 0.5, im_h)
-            .reshape(im_h, 1)
-            .repeat(im_w, 1)
-            .astype(np.float32)
-            + 0.5 * im_h
-        )
-        xy_cam = np.stack([X, Y], axis=2)
-        focal_length = focal_rel * im_h
-
-        if elevation == 0:
-            up_vecs = np.ones(xy_cam.shape) * np.array(
-                [[-np.sin(roll)], [-np.cos(roll)]]
-            ).reshape((1, 2))
-        else:
-            vvp = np.array(
-                [
-                    [
-                        (np.sin(roll) * np.cos(elevation) * focal_length)
-                        / -np.sin(elevation)
-                        + (cx)
-                    ],
-                    [
-                        (np.cos(roll) * np.cos(elevation) * focal_length)
-                        / -np.sin(elevation)
-                        + (cy)
-                    ],
-                ]
-            ).reshape((1, 2))
-            up_vecs = vvp - xy_cam
-            up_vecs = up_vecs * np.sign(elevation)
-
-        up_vecs_norm = np.linalg.norm(up_vecs, axis=2)[:, :, None]
-        up_vecs = up_vecs / up_vecs_norm
-        return up_vecs
-
-    @staticmethod
-    def get_lat_general(focal_rel, im_w, im_h, elevation, roll, cx_rel, cy_rel):
-        """get latitude map from camera parameters.
-           no assumptions about centered principal point.
-
-        Args:
-            focal_rel (float): relative focal length, defined as focal length divided by image height
-            im_w (int): image width
-            im_h (int): image height
-            elevation (float): camera rotation about world frame x-axis (radians)
-            roll (float): rotation aboout z-axis (radians)
-            cx_rel (float): relative cx location (pixel coordinate / image width - 0.5)
-            cy_rel (float): relative cy location (pixel coordinate / image height - 0.5)
-
-        Returns:
-            np.ndarray: latitude map of shape (im_h, im_w) in degrees
-        """
-        # Uniform sampling on the plane
-        focal_length = focal_rel * im_h
-        cx = (cx_rel + 0.5) * im_w
-        cy = (cy_rel + 0.5) * im_h
-        dy = np.linspace(
-            (-im_h / 2) - (cy - (im_h / 2)), (im_h / 2) - (cy - (im_h / 2)), im_h
-        )
-        dx = np.linspace(
-            (-im_w / 2) - (cx - (im_w / 2)), (im_w / 2) - (cx - (im_w / 2)), im_w
-        )
-        x, y = np.meshgrid(dx, dy)
-
-        x, y = (x.ravel() / focal_length), (y.ravel() / focal_length)
-        focal_length = 1
-        x_world = x * np.cos(roll) - y * np.sin(roll)
-        y_world = (
-            x * np.cos(elevation) * np.sin(roll)
-            + y * np.cos(elevation) * np.cos(roll)
-            - focal_length * np.sin(elevation)
-        )
-        z_world = (
-            x * np.sin(elevation) * np.sin(roll)
-            + y * np.sin(elevation) * np.cos(roll)
-            + focal_length * np.cos(elevation)
-        )
-        l = -np.arctan2(y_world, np.sqrt(x_world**2 + z_world**2)) / np.pi * 180
-
-        return l.reshape(im_h, im_w)
-
 
 def draw_vanishing_opencv(
     img, horizon, vvp, pad=(1, 1), elevation=0, roll=0, azimuth=0, vfov=30
@@ -890,155 +844,3 @@ def blend_color(img, color, alpha=0.2):
     outImage = outImage.astype(np.uint8)
     return outImage
 
-
-def random_plot():
-    save_path = "/home/code-base/user_space/public_html/360cities/e05_vanishing_random"
-    os.makedirs(save_path, exist_ok=True)
-    pano_paths = list(sorted(glob("data/10000x5000/*.jpg")))
-    pano_paths = np.random.choice(pano_paths, 10)
-    for pano_path in tqdm(pano_paths):
-        cam = PanoCam(pano_path)
-        img_id = os.path.basename(pano_path).split(".")[0]
-
-        rand = random.randint(0, 3)
-
-        if rand % 4 == 0:
-            # change r
-            # r = random.randint(-45, 45)
-            p = random.randint(-90, 90)
-            y = random.randint(-180, 180)
-            fov = random.randint(30, 120)
-            writer = imageio.get_writer(
-                os.path.join(save_path, "r_" + img_id + f"_p{p}_y{y}f{fov}.mp4"), fps=10
-            )
-            for r in np.arange(-45, 50, 5):
-                crop, horizon, vvp = cam.get_image(
-                    elevation=p, roll=r, azimuth=y, vfov=fov
-                )
-                im = draw_vanishing_opencv(
-                    crop.copy(), horizon, vvp, elevation=p, roll=r, azimuth=y, vfov=fov
-                )
-                writer.append_data(im)
-            writer.close()
-        elif rand % 4 == 1:
-            # change p
-            r = random.randint(-45, 45)
-            # p = random.randint(-90, 90)
-            y = random.randint(-180, 180)
-            fov = random.randint(30, 120)
-            writer = imageio.get_writer(
-                os.path.join(save_path, "p_" + img_id + f"_r{r}y{y}f{fov}.mp4"), fps=10
-            )
-            for p in np.arange(-90, 95, 5):
-                crop, horizon, vvp = cam.get_image(
-                    elevation=p, roll=r, azimuth=y, vfov=fov
-                )
-                im = draw_vanishing_opencv(
-                    crop.copy(), horizon, vvp, elevation=p, roll=r, azimuth=y, vfov=fov
-                )
-                writer.append_data(im)
-            writer.close()
-        elif rand % 4 == 2:
-            # change y
-            r = random.randint(-45, 45)
-            p = random.randint(-90, 90)
-            # y = random.randint(-180, 180)
-            fov = random.randint(30, 120)
-            writer = imageio.get_writer(
-                os.path.join(save_path, "y_" + img_id + f"_r{r}p{p}f{fov}.mp4"), fps=10
-            )
-            for y in np.arange(-180, 180, 30):
-                crop, horizon, vvp = cam.get_image(
-                    elevation=p, roll=r, azimuth=y, vfov=fov
-                )
-                im = draw_vanishing_opencv(
-                    crop.copy(), horizon, vvp, elevation=p, roll=r, azimuth=y, vfov=fov
-                )
-                writer.append_data(im)
-            writer.close()
-        elif rand % 4 == 3:
-            # change f
-            r = random.randint(-45, 45)
-            p = random.randint(-90, 90)
-            y = random.randint(-180, 180)
-            # fov = random.randint(30, 120)
-            writer = imageio.get_writer(
-                os.path.join(save_path, "f_" + img_id + f"_r{r}p{p}y{y}.mp4"), fps=10
-            )
-            for fov in np.arange(30, 130, 10):
-                crop, horizon, vvp = cam.get_image(
-                    elevation=p, roll=r, azimuth=y, vfov=fov
-                )
-                im = draw_vanishing_opencv(
-                    crop.copy(), horizon, vvp, elevation=p, roll=r, azimuth=y, vfov=fov
-                )
-                writer.append_data(im)
-            writer.close()
-
-
-def pano_grid():
-    save_path = "./debug2Linyi"
-    os.makedirs(save_path, exist_ok=True)
-    # pano_path = 'example/pano_grid.png'
-    pano_path = "example/pano_grid2.jpg"
-    cam = PanoCam(pano_path)
-    img_id = os.path.basename(pano_path).split(".")[0]
-    im_w = 640
-    im_h = 480
-    ar = im_w / im_h
-    vfov = 60
-    for p in np.arange(-20, 20.5, 0.5):
-        writer = imageio.get_writer(
-            os.path.join(save_path, "_" + img_id + f"_p{p}.mp4"), fps=10
-        )
-        for r in np.arange(-45, 50, 5):
-            latimap = cam.get_latitude(
-                vfov=vfov, im_w=im_w, im_h=im_h, elevation=p, roll=r, colormap="Set1"
-            )
-            crop, horizon, vvp = cam.get_image(
-                vfov=vfov,
-                im_w=im_w,
-                im_h=im_h,
-                elevation=p,
-                roll=r,
-                ar=ar,
-                img_format="BGR",
-            )
-            # im = draw_vanishing_opencv(crop.copy(), horizon, vvp)
-            im = blend_color(crop.copy(), latimap)
-            # cv2.imwrite("debug.png", im[:,:,::-1])
-            # cv2.imwrite("latitude.png", crop[:,:,::-1])
-            # import pdb;pdb.set_trace()
-            writer.append_data(im)
-        writer.close()
-        break
-    for r in np.arange(-30, 40, 2):
-        writer = imageio.get_writer(
-            os.path.join(save_path, "_" + img_id + f"_r{r}.mp4"), fps=10
-        )
-        for p in np.arange(-90, 95, 5):
-            latimap = cam.get_latitude(
-                vfov=vfov, im_w=im_w, im_h=im_h, elevation=p, roll=r, colormap="Set1"
-            )
-            crop, horizon, vvp = cam.get_image(
-                vfov=vfov,
-                im_w=im_w,
-                im_h=im_h,
-                elevation=p,
-                roll=r,
-                ar=ar,
-                img_format="BGR",
-            )
-            # im = draw_vanishing_opencv(crop.copy(), horizon, vvp)
-            im = blend_color(crop.copy(), latimap)
-            # cv2.imwrite("debug.png", im[:,:,::-1])
-            # cv2.imwrite("latitude.png", crop[:,:,::-1])
-            # import pdb;pdb.set_trace()
-            writer.append_data(im)
-        writer.close()
-        break
-
-
-if __name__ == "__main__":
-    pano_grid()
-    # random_plot()
