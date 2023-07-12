@@ -27,10 +27,11 @@ def load_gsv_json(json_file, img_root):
                 focal_length = np.float32(row[5])
                 dp["vfov"] = np.degrees(2 * np.arctan(dp["height"] / 2 / focal_length))
                 dp["dataset"] = "gsv"
-                dp["list_hvps"] = [
-                    [np.float32(row[6]), np.float32(row[7]), 1.0],
-                    [np.float32(row[8]), np.float32(row[9]), 1.0],
-                ]
+                # list_hvps not used
+                # dp["list_hvps"] = [
+                #     [np.float32(row[6]), np.float32(row[7]), 1.0],
+                #     [np.float32(row[8]), np.float32(row[9]), 1.0],
+                # ]
                 summary["data"].append(dp)
         logger.info(f"{os.path.basename(json_file)}: {len(summary['data'])}")
         return summary["data"]
