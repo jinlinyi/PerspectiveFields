@@ -5,7 +5,7 @@ setup(
     version="0.1",
     packages=find_packages(),
     install_requires=[
-        'detectron2@git+https://github.com/facebookresearch/detectron2.git@4e447553eb32b6e3784df0b8fca286935107b2fd',
+        'detectron2@git+https://github.com/facebookresearch/detectron2.git@4e447553eb32b6e3784df0b8fca286935107b2fd', 
         "torchvision",
         "torchaudio",
         "openexr",
@@ -13,6 +13,7 @@ setup(
         "opencv-contrib-python",
         "albumentations",
         "pyequilib==0.3.0",
+        "Pillow==9.5.0",
         "skylibs",
         "timm",
         "h5py",
