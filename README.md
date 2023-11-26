@@ -79,8 +79,9 @@ git clone git@github.com:jinlinyi/PerspectiveFields.git
 # create virtual env
 conda create -n perspective python=3.9
 conda activate perspective
-# install pytorch compatible to your system
-conda install pytorch torchvision cudatoolkit -c pytorch
+# install pytorch compatible to your system https://pytorch.org/get-started/previous-versions/
+# conda install pytorch torchvision cudatoolkit -c pytorch
+conda install pytorch=1.10.0 torchvision torchaudio cudatoolkit=11.3 -c pytorch
 # conda packages
 conda install -c conda-forge openexr-python openexr
 # pip packages

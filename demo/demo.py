@@ -26,7 +26,6 @@ from perspective2d.utils import (
     draw_from_r_p_f_cx_cy,
     draw_latitude_field,
     draw_up_field,
-    draw_vector_field,
 )
 from perspective2d.utils.panocam import PanoCam
 from perspective2d.utils.predictor import VisualizationDemo
@@ -314,6 +313,12 @@ def save_vis(demo, img, pred, output_folder):
     )
     pred_vis.save(os.path.join(output_folder, "perspective_pred"))
 
+    if 'pred_general_vfov' not in pred.keys():
+        pred['pred_general_vfov'] = pred['pred_vfov']
+    if 'pred_rel_cx' not in pred.keys():
+        pred['pred_rel_cx'] = torch.FloatTensor([0])
+    if 'pred_rel_cy' not in pred.keys():
+        pred['pred_rel_cy'] = torch.FloatTensor([0])
     # Draw perspective field from ParamNet predictions
     param_vis = draw_from_r_p_f_cx_cy(
         img[:, :, ::-1],
@@ -327,9 +332,11 @@ def save_vis(demo, img, pred, output_folder):
     ).astype(np.uint8)
 
     param_vis = cv2.cvtColor(param_vis, cv2.COLOR_RGB2BGR)
-    pred_roll = "pred roll: " + str(round(pred["pred_roll"].item(), 3))
-    pred_pitch = "pred pitch: " + str(round(pred["pred_pitch"].item(), 3))
-    pred_vfov = "pred vfov: " + str(round(pred["pred_general_vfov"].item(), 3))
+    pred_roll = f"roll: {pred['pred_roll'].item() :.2f}"
+    pred_pitch = f"pitch: {pred['pred_pitch'].item() :.2f}"
+    pred_vfov = f"vfov: {pred['pred_general_vfov'].item() :.2f}"
+    pred_cx = f"cx: {pred['pred_rel_cx'].item() :.2f}"
+    pred_cy = f"cy: {pred['pred_rel_cy'].item() :.2f}"
 
     # Write parameter predictions on the visualization
     font = cv2.FONT_HERSHEY_SIMPLEX
@@ -356,6 +363,24 @@ def save_vis(demo, img, pred, output_folder):
         param_vis,
         pred_vfov,
         (int(param_vis.shape[1] * 0.6) - 2, int(param_vis.shape[0] * 0.1) + 50),
+        font,
+        font_scale,
+        (0, 0, 255),
+        2,
+    )
+    param_vis = cv2.putText(
+        param_vis,
+        pred_cx,
+        (int(param_vis.shape[1] * 0.6) - 2, int(param_vis.shape[0] * 0.1) + 75),
+        font,
+        font_scale,
+        (0, 0, 255),
+        2,
+    )
+    param_vis = cv2.putText(
+        param_vis,
+        pred_cy,
+        (int(param_vis.shape[1] * 0.6) - 2, int(param_vis.shape[0] * 0.1) + 100),
         font,
         font_scale,
         (0, 0, 255),
