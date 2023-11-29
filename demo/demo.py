@@ -312,6 +312,8 @@ def save_vis(demo, img, pred, output_folder):
         latimap_format=pred["pred_latitude_original_mode"],
     )
     pred_vis.save(os.path.join(output_folder, "perspective_pred"))
+    if not (demo.predictors[0].cfg.MODEL.RECOVER_RPF or demo.predictors[0].cfg.MODEL.RECOVER_PP):
+        return 
 
     if 'pred_general_vfov' not in pred.keys():
         pred['pred_general_vfov'] = pred['pred_vfov']
