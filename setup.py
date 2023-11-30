@@ -18,7 +18,6 @@ setup(
         "h5py",
         "tensorboard",
         "setuptools",
-        "Pillow==9.5.0",
         "scikit-learn",
         "gradio",
     ],
