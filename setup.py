@@ -5,7 +5,7 @@ setup(
     version="0.1",
     packages=find_packages(),
     install_requires=[
-        "detectron2@git+https://github.com/facebookresearch/detectron2.git@4e447553eb32b6e3784df0b8fca286935107b2fd",
+        "detectron2@git+https://github.com/facebookresearch/detectron2.git@5de5319a49e7ea819586d3d6a817632392dfdeb2",
         "torchvision",
         "openexr",
         "openmim",
