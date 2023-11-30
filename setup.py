@@ -8,7 +8,7 @@ setup(
         "detectron2@git+https://github.com/facebookresearch/detectron2.git@4e447553eb32b6e3784df0b8fca286935107b2fd",
         "torchvision",
         "openexr",
-        "openmin",
+        "openmim",
         "gitpython",
         "opencv-contrib-python",
         "albumentations",
