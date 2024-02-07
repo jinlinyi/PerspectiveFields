@@ -297,7 +297,6 @@ Example:
 ```bash
 python -W ignore demo/test_persfield.py \
 --dataset stanford2d3d_test \
---output ./exps/persnet_360_cities_test \
 --config-file ./models/cvpr2023.yaml \
 --opts MODEL.WEIGHTS ./models/cvpr2023.pth
 ```

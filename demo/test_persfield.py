@@ -73,23 +73,6 @@ def get_parser():
     )
     parser.add_argument("--dataset", required=True, help="dataset name")
     parser.add_argument(
-        "--output",
-        help="A file or directory to save output visualizations. "
-        "If not given, will show output in an OpenCV window.",
-    )
-    parser.add_argument(
-        "--max",
-        type=int,
-        default=-1,
-        help="max number of items for inference",
-    )
-    parser.add_argument(
-        "--expname",
-        type=str,
-        help="ours name",
-    )
-
-    parser.add_argument(
         "--opts",
         help="Modify config options using the command-line 'KEY VALUE' pairs",
         default=[],
@@ -324,33 +307,17 @@ if __name__ == "__main__":
     lat_meds =np.array([o['med_lati_err_deg'] for o in return_dict.values()])
 
     eval_metrics = {}
-    if 'avg(up_avgs)' in metrics[:,0]:
-        eval_metrics['avg(up_avgs)'] = np.average(up_avgs) 
     if 'med(up_avgs)' in metrics[:,0]:
         eval_metrics['med(up_avgs)']= np.median(up_avgs) 
-    if '%(up_avgs)<5' in metrics[:,0]:
-        eval_metrics['%(up_avgs)<5']= np.sum(up_avgs<5) / len(up_avgs) * 100 
-    if 'avg(lat_avgs)' in metrics[:,0]:
-        eval_metrics['avg(lat_avgs)'] = np.average(lat_avgs) 
     if 'med(lat_avgs)' in metrics[:,0]:
         eval_metrics['med(lat_avgs)'] = np.median(lat_avgs) 
-    if '%(lat_avgs)<5' in metrics[:,0]:
-        eval_metrics['%(lat_avgs)<5'] = np.sum(lat_avgs<5) / len(lat_avgs) * 100 
     if 'pgp_up<5' in metrics[:,0]:
         eval_metrics['pgp_up<5'] = np.average(np.array([o['perc_up_err_less_5'] for o in return_dict.values()])) * 100
     if 'pgp_lat<5' in metrics[:,0]:
         eval_metrics['pgp_lat<5'] = np.average(np.array([o['perc_lati_err_less_5'] for o in return_dict.values()])) * 100
-    if 'avg(up_meds)' in metrics[:,0]:
-        eval_metrics['avg(up_meds)'] = np.average(up_meds) 
     if 'med(up_meds)' in metrics[:,0]:
         eval_metrics['med(up_meds)']= np.median(up_meds) 
-    if '%(up_meds)<5' in metrics[:,0]:
-        eval_metrics['%(up_meds)<5']= np.sum(up_meds<5) / len(up_meds) * 100 
-    if 'avg(lat_meds)' in metrics[:,0]:
-        eval_metrics['avg(lat_meds)'] = np.average(lat_meds) 
     if 'med(lat_meds)' in metrics[:,0]:
         eval_metrics['med(lat_meds)'] = np.median(lat_meds) 
-    if '%(lat_meds)<5' in metrics[:,0]:
-        eval_metrics['%(lat_meds)<5'] = np.sum(lat_meds<5) / len(lat_meds) * 100 
     for m in metrics:
         print(f"{m[1]}: {eval_metrics[m[0]] :.2f}")
