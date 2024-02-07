@@ -295,7 +295,7 @@ First, to test PerspectiveNet, provide a dataset name corresponding to a name/pa
 
 Example:
 ```bash
-python -W ignore demo/test_warp.py \
+python -W ignore demo/test_persfield.py \
 --dataset stanford2d3d_test \
 --output ./exps/persnet_360_cities_test \
 --config-file ./models/cvpr2023.yaml \
@@ -313,6 +313,14 @@ python -W ignore demo/test_param_network.py \
 --output ./exps/paramnet_gsv_test \
 --config-file ./models/paramnet_gsv_rpf.yaml \
 --opts MODEL.WEIGHTS ./models/paramnet_gsv_rpf.pth
+```
+
+```bash
+python -W ignore demo/test_param_network.py \
+--dataset gsv_test_crop_uniform  \
+--output ./exps/paramnet_gsv_test \
+--config-file ./models/paramnet_gsv_rpfpp.yaml \
+--opts MODEL.WEIGHTS ./models/paramnet_gsv_rpfpp.pth
 ```
 
 </details>

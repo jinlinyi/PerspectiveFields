@@ -1,4 +1,3 @@
-# Copyright (c) Facebook, Inc. and its affiliates.
 import argparse
 import copy
 import glob
@@ -32,8 +31,6 @@ from perspective2d.config import get_perspective2d_cfg_defaults
 from perspective2d.data import PerspectiveMapper
 from perspective2d.utils.predictor import VisualizationDemo
 
-# constants
-WINDOW_NAME = "COCO detections"
 
 # TODO: set args type
 def setup_cfg(args):
@@ -221,9 +218,7 @@ def eval_by_idx(cfg, demo, dataset, idx):
         avg_lati_err_deg = mat_lati_err_deg.numpy()[mask].mean()
         med_lati_err_deg = np.median(mat_lati_err_deg.numpy()[mask])
     else:
-        import pdb
-
-        pdb.set_trace()
+        breakpoint()
         raise NotImplementedError
     rtn = {
         "pred_gravity_original": predictions["pred_gravity_original"].cpu().numpy(),
@@ -260,52 +255,6 @@ def eval_by_list(cfg, demo, dataset, idx_list, return_dict, multiprocessing=Fals
         return_dict[idx] = rtn
         # if not multiprocessing:
         #     loop.set_description('Optimizing (loss %.4f)' % rtn['loss'])
-
-
-def multiprocess_by_list(cfg, demo, dataset, idx_list, num_process):
-    """evaluate images at each index in idx_list from dataset using multiple threads
-
-    Args:
-        cfg (CfgNode): model configurations
-        demo (VisualizationDemo)
-        dataset (dict): dict containing metadata for every image in the dataset
-        idx_list (list[int]): list of indexes to evaluate at
-        num_process (int): number of processes
-
-    Returns:
-        dict: dict containing errors for each image
-    """
-    max_iter = len(idx_list)
-    jobs = []
-    manager = multiprocessing.Manager()
-    return_dict = manager.dict()
-
-    per_thread = int(np.ceil(max_iter / num_process))
-    split_by_thread = [
-        idx_list[i * per_thread : (i + 1) * per_thread] for i in range(num_process)
-    ]
-    for i in range(num_process):
-        p = Process(
-            target=eval_by_list,
-            args=(cfg, demo, dataset, split_by_thread[i], return_dict, True),
-        )
-        p.start()
-        jobs.append(p)
-
-    prev = 0
-    with tqdm(total=max_iter) as pbar:
-        while True:
-            time.sleep(0.1)
-            curr = len(return_dict.keys())
-            pbar.update(curr - prev)
-            prev = curr
-            if curr == max_iter:
-                break
-
-    for job in jobs:
-        job.join()
-
-    return return_dict
 
 
 class dataset_list(MapDataset):
@@ -359,32 +308,49 @@ if __name__ == "__main__":
 
     eval_by_list(cfg, demo, dataloader, idx_list, return_dict)
 
-    up_errs, lati_errs = [], []
-    for idx in return_dict.keys():
-        up_errs.append(return_dict[idx]["avg_up_err_deg"])
-        lati_errs.append(return_dict[idx]["avg_lati_err_deg"])
-    up_errs = np.array(up_errs)
-    lati_errs = np.array(lati_errs)
-    percent_up = np.sum(np.array(up_errs) < 5) / len(up_errs) * 100
-    percent_lati = np.sum(np.array(lati_errs) < 5) / len(lati_errs) * 100
-    print(f"up_errs mean: {np.average(up_errs):.2f}")
-    print(f"up_errs median: {np.median(up_errs):.2f}")
-    print(f"up_errs %<5: {percent_up:.2f}")
-    print(f"lati_errs mean: {np.average(lati_errs):.2f}")
-    print(f"lati_errs median: {np.median(lati_errs):.2f}")
-    print(f"lati_errs %<5: {percent_lati:.2f}")
-    print(
-        "{:.2f} & {:.2f} & {:.2f} & {:.2f} & {:.2f} & {:.2f} \\\\".format(
-            np.average(up_errs),
-            np.median(up_errs),
-            percent_up,
-            np.average(lati_errs),
-            np.median(lati_errs),
-            percent_lati,
-        )
-    )
 
-    with open(
-        os.path.join(args.output, f"{args.expname}-{args.dataset}.pickle"), "wb"
-    ) as f:
-        pickle.dump(return_dict, f)
+
+    metrics = np.array([
+        ['med(up_avgs)', 'up mean'],
+        ['med(up_meds)', 'up median'],
+        ['pgp_up<5', 'up %<5'],
+        ['med(lat_avgs)', 'lati mean'],
+        ['med(lat_meds)', 'lati median'],
+        ['pgp_lat<5', 'lati %<5'],
+    ])
+    up_avgs = np.array([o['avg_up_err_deg'] for o in return_dict.values()])
+    lat_avgs = np.array([o['avg_lati_err_deg'] for o in return_dict.values()])
+    up_meds =np.array([o['med_up_err_deg'] for o in return_dict.values()])
+    lat_meds =np.array([o['med_lati_err_deg'] for o in return_dict.values()])
+
+    eval_metrics = {}
+    if 'avg(up_avgs)' in metrics[:,0]:
+        eval_metrics['avg(up_avgs)'] = np.average(up_avgs) 
+    if 'med(up_avgs)' in metrics[:,0]:
+        eval_metrics['med(up_avgs)']= np.median(up_avgs) 
+    if '%(up_avgs)<5' in metrics[:,0]:
+        eval_metrics['%(up_avgs)<5']= np.sum(up_avgs<5) / len(up_avgs) * 100 
+    if 'avg(lat_avgs)' in metrics[:,0]:
+        eval_metrics['avg(lat_avgs)'] = np.average(lat_avgs) 
+    if 'med(lat_avgs)' in metrics[:,0]:
+        eval_metrics['med(lat_avgs)'] = np.median(lat_avgs) 
+    if '%(lat_avgs)<5' in metrics[:,0]:
+        eval_metrics['%(lat_avgs)<5'] = np.sum(lat_avgs<5) / len(lat_avgs) * 100 
+    if 'pgp_up<5' in metrics[:,0]:
+        eval_metrics['pgp_up<5'] = np.average(np.array([o['perc_up_err_less_5'] for o in return_dict.values()])) * 100
+    if 'pgp_lat<5' in metrics[:,0]:
+        eval_metrics['pgp_lat<5'] = np.average(np.array([o['perc_lati_err_less_5'] for o in return_dict.values()])) * 100
+    if 'avg(up_meds)' in metrics[:,0]:
+        eval_metrics['avg(up_meds)'] = np.average(up_meds) 
+    if 'med(up_meds)' in metrics[:,0]:
+        eval_metrics['med(up_meds)']= np.median(up_meds) 
+    if '%(up_meds)<5' in metrics[:,0]:
+        eval_metrics['%(up_meds)<5']= np.sum(up_meds<5) / len(up_meds) * 100 
+    if 'avg(lat_meds)' in metrics[:,0]:
+        eval_metrics['avg(lat_meds)'] = np.average(lat_meds) 
+    if 'med(lat_meds)' in metrics[:,0]:
+        eval_metrics['med(lat_meds)'] = np.median(lat_meds) 
+    if '%(lat_meds)<5' in metrics[:,0]:
+        eval_metrics['%(lat_meds)<5'] = np.sum(lat_meds<5) / len(lat_meds) * 100 
+    for m in metrics:
+        print(f"{m[1]}: {eval_metrics[m[0]] :.2f}")

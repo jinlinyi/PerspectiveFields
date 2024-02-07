@@ -140,6 +140,7 @@ MODEL:
     INSTANCE_LOSS_WEIGHT: 1.0
   PARAM_DECODER:
     LOSS_TYPE: regression
+    PREDICT_PARAMS: ['roll', 'pitch', 'vfov']
     LOSS_WEIGHT: 1.0
     NAME: ParamNet
   PERSFORMER_HEADS:

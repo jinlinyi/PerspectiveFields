@@ -1,4 +1,3 @@
-# Copyright (c) Facebook, Inc. and its affiliates.
 import argparse
 import copy
 import glob
@@ -31,10 +30,6 @@ from perspective2d.config import get_perspective2d_cfg_defaults
 from perspective2d.data import PerspectiveMapper
 from perspective2d.utils import PanoCam, general_vfov_to_focal
 from perspective2d.utils.predictor import VisualizationDemo
-
-# constants
-WINDOW_NAME = "COCO detections"
-
 
 def setup_cfg_dataloader(args):
     """setup dataloader configurations
@@ -369,52 +364,6 @@ def eval_by_list(cfg, demo, dataset, idx_list, return_dict, multiprocessing=Fals
         return_dict[idx] = rtn
 
 
-def multiprocess_by_list(cfg, demo, dataset, idx_list, num_process):
-    """evaluate images at each index in idx_list from dataset using multiple threads
-
-    Args:
-        cfg (CfgNode): model configurations
-        demo (VisualizationDemo)
-        dataset (dict): dict containing metadata for every image in the dataset
-        idx_list (list[int]): list of indexes to evaluate at
-        num_process (int): number of processes
-
-    Returns:
-        dict: dict containing errors for each image
-    """
-    max_iter = len(idx_list)
-    jobs = []
-    manager = multiprocessing.Manager()
-    return_dict = manager.dict()
-
-    per_thread = int(np.ceil(max_iter / num_process))
-    split_by_thread = [
-        idx_list[i * per_thread : (i + 1) * per_thread] for i in range(num_process)
-    ]
-    for i in range(num_process):
-        p = Process(
-            target=eval_by_list,
-            args=(cfg, demo, dataset, split_by_thread[i], return_dict, True),
-        )
-        p.start()
-        jobs.append(p)
-
-    prev = 0
-    with tqdm(total=max_iter) as pbar:
-        while True:
-            time.sleep(0.1)
-            curr = len(return_dict.keys())
-            pbar.update(curr - prev)
-            prev = curr
-            if curr == max_iter:
-                break
-
-    for job in jobs:
-        job.join()
-
-    return return_dict
-
-
 class dataset_list(MapDataset):
     def __init__(self, cfg_list, dataset):
         dataloaders = []
@@ -487,16 +436,14 @@ if __name__ == "__main__":
 
     up_errs, lati_errs = [], []
     for idx in return_dict.keys():
-        up_errs.append(return_dict[idx]["avg_up_err_deg"])
-        lati_errs.append(return_dict[idx]["avg_lati_err_deg"])
+        up_errs.append(return_dict[idx]["med_up_err_deg"])
+        lati_errs.append(return_dict[idx]["med_lati_err_deg"])
     up_errs = np.array(up_errs)
     lati_errs = np.array(lati_errs)
     percent_up = np.sum(np.array(up_errs) < 5) / len(up_errs) * 100
     percent_lati = np.sum(np.array(lati_errs) < 5) / len(lati_errs) * 100
-    print(f"up_errs mean: {np.average(up_errs):.2f}")
     print(f"up_errs median: {np.median(up_errs):.2f}")
     print(f"up_errs %<5: {percent_up:.2f}")
-    print(f"lati_errs mean: {np.average(lati_errs):.2f}")
     print(f"lati_errs median: {np.median(lati_errs):.2f}")
     print(f"lati_errs %<5: {percent_lati:.2f}")
     print(
