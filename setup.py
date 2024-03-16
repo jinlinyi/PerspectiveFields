@@ -2,14 +2,11 @@ from setuptools import find_packages, setup
 
 setup(
     name="perspective2d",
-    version="0.1",
+    version="0.9.0",
     packages=find_packages(),
     install_requires=[
-        "detectron2@git+https://github.com/facebookresearch/detectron2.git@4e447553eb32b6e3784df0b8fca286935107b2fd",
         "torchvision",
-        "torchaudio",
         "openexr",
-        "gitpython",
         "opencv-contrib-python",
         "albumentations",
         "pyequilib==0.3.0",
@@ -18,7 +15,6 @@ setup(
         "h5py",
         "tensorboard",
         "setuptools==59.5.0",
-        "gradio",
     ],
     author="Linyi Jin",
     author_email="jinlinyi@umich.edu",

@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.optimize
 import torch
-from detectron2.utils.colormap import colormap
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 
 from perspective2d.utils.visualizer import VisualizerPerspective
