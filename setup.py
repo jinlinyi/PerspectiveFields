@@ -1,7 +1,7 @@
 from setuptools import find_packages, setup
 
 setup(
-    name="perspectivefields",
+    name="perspective2d",
     version="1.0.0",
     packages=find_packages(),
     include_package_data=True,  # This line is important!
@@ -9,7 +9,7 @@ setup(
         # If any package contains *.txt or *.rst files, include them:
         '': ['*.txt', '*.rst', '*.yaml'],
         # And include any *.msg files found in the 'hello' package, too:
-        'perspectivefields.config': ['*.yaml'],
+        'perspective2d.config': ['*.yaml'],
     },
     install_requires=[
         "albumentations",

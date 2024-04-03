@@ -4,13 +4,11 @@ DATALOADER:
   - 320
 DATASETS:
   TEST:
-  - gsv_val
-  - gsv_test
+  - gsv_test_crop_uniform
   TRAIN:
   - gsv_train
 DEBUG_ON: false
 MODEL:
-  WEIGHTS: /home/jinlinyi/exp/densefield/e32_gsv_regress_ade/e04-lr-3-rebalanced/model_final.pth
   GRAVITY_DECODER:
     IGNORE_VALUE: 72
     LOSS_TYPE: regression
@@ -26,13 +24,16 @@ MODEL:
     NUM_CLASSES: 1
   LATITUDE_ON: true
   PARAM_DECODER:
+    INPUT_SIZE: 64
     LOSS_TYPE: regression
-    PREDICT_PARAMS: 
-    - 'roll'
-    - 'pitch'
-    - 'vfov'
-    LOSS_WEIGHT: 1.0
-    NAME: ParamNet
+    LOSS_WEIGHT: 0.1
+    NAME: ParamNetConvNextRegress
+    PREDICT_PARAMS:
+    - roll
+    - pitch
+    - general_vfov
+    - rel_cx
+    - rel_cy
   PERSFORMER_HEADS:
     NAME: StandardPersformerHeads
   PIXEL_MEAN:
@@ -43,5 +44,5 @@ MODEL:
   - 1.0
   - 1.0
   - 1.0
-  RECOVER_PP: false
+  RECOVER_PP: true
   RECOVER_RPF: true

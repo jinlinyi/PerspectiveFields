@@ -4,36 +4,27 @@ DATALOADER:
   - 320
 DATASETS:
   TEST:
-  - edina_test_crop_vfov
+  - stanford2d3d_test
+  - tartanair_test
   TRAIN:
-  - edina_train
   - cities360_train
+  - rgbdpano_train
 DEBUG_ON: false
 MODEL:
-  WEIGHTS: ./init_model_weights/cvpr2023.pth
   GRAVITY_DECODER:
     IGNORE_VALUE: 72
-    LOSS_TYPE: regression
+    LOSS_TYPE: classification
     LOSS_WEIGHT: 1.0
     NAME: GravityDecoder
     NUM_CLASSES: 73
   GRAVITY_ON: true
   LATITUDE_DECODER:
     IGNORE_VALUE: -1
-    LOSS_TYPE: regression
+    LOSS_TYPE: classification
     LOSS_WEIGHT: 1.0
     NAME: LatitudeDecoder
-    NUM_CLASSES: 1
+    NUM_CLASSES: 180
   LATITUDE_ON: true
-  PARAM_DECODER:
-    INPUT_SIZE: 64
-    LOSS_TYPE: regression
-    LOSS_WEIGHT: 1.0
-    NAME: ParamNet
-    PREDICT_PARAMS:
-    - roll
-    - pitch
-    - vfov
   PERSFORMER_HEADS:
     NAME: StandardPersformerHeads
   PIXEL_MEAN:
@@ -45,4 +36,4 @@ MODEL:
   - 1.0
   - 1.0
   RECOVER_PP: false
-  RECOVER_RPF: true
+  RECOVER_RPF: false

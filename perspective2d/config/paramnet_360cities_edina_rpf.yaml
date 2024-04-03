@@ -4,12 +4,12 @@ DATALOADER:
   - 320
 DATASETS:
   TEST:
-  - gsv_test_crop_uniform
+  - edina_test_crop_vfov
   TRAIN:
-  - gsv_train
+  - edina_train
+  - cities360_train
 DEBUG_ON: false
 MODEL:
-  WEIGHTS: /home/jinlinyi/exp/densefield/e32_gsv_regress_ade/e04-lr-3-rebalanced/model_final.pth
   GRAVITY_DECODER:
     IGNORE_VALUE: 72
     LOSS_TYPE: regression
@@ -27,14 +27,12 @@ MODEL:
   PARAM_DECODER:
     INPUT_SIZE: 64
     LOSS_TYPE: regression
-    LOSS_WEIGHT: 0.1
-    NAME: ParamNetConvNextRegress
+    LOSS_WEIGHT: 1.0
+    NAME: ParamNet
     PREDICT_PARAMS:
     - roll
     - pitch
-    - general_vfov
-    - rel_cx
-    - rel_cy
+    - vfov
   PERSFORMER_HEADS:
     NAME: StandardPersformerHeads
   PIXEL_MEAN:
@@ -45,5 +43,5 @@ MODEL:
   - 1.0
   - 1.0
   - 1.0
-  RECOVER_PP: true
+  RECOVER_PP: false
   RECOVER_RPF: true

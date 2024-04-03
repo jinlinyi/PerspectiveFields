@@ -10,7 +10,6 @@ DATASETS:
   - cities360_train
 DEBUG_ON: false
 MODEL:
-  WEIGHTS: ./init_model_weights/cvpr2023.pth
   GRAVITY_DECODER:
     IGNORE_VALUE: 72
     LOSS_TYPE: regression
