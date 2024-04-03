@@ -37,6 +37,7 @@ We propose Perspective Fields as a representation that models the local perspect
 <!-- omit in toc -->
 Updates
 ------------------
+- We release a clean version with minimal dependencies for inference.
 - We released a new model trained on [360cities](https://www.360cities.net/) and [EDINA](https://github.com/tien-d/EgoDepthNormal/blob/main/README_dataset.md) dataset, consisting of indoor🏠, outdoor🏙️, natural🌳, and egocentric👋 data!
 - Live demo released 🤗. https://huggingface.co/spaces/jinlinyi/PerspectiveFields. Thanks Huggingface for funding this demo!
 
@@ -44,6 +45,8 @@ Updates
 Table of Contents
 ------------------
 - [Environment Setup](#environment-setup)
+  - [Inference only with minimal requirement](#inference-only-with-minimal-requirement)
+  - [Development](#development)
 - [Model Zoo](#model-zoo)
 - [Coordinate Frame](#coordinate-frame)
 - [Inference](#inference)
@@ -67,8 +70,14 @@ Table of Contents
 [6]: ./docs/test.md
 [7]: ./docs/models.md
 
-
 ## Environment Setup
+### Inference only with minimal requirement
+```bash
+TODO
+```
+
+
+### Development
 PerspectiveFields requires python >= 3.8 and [PyTorch](https://pytorch.org/).
 
 

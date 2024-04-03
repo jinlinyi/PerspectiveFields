@@ -1,24 +1,31 @@
 from setuptools import find_packages, setup
 
 setup(
-    name="perspective2d",
-    version="0.1",
+    name="perspectivefields",
+    version="1.0.0",
     packages=find_packages(),
+    include_package_data=True,  # This line is important!
+    package_data={
+        # If any package contains *.txt or *.rst files, include them:
+        '': ['*.txt', '*.rst', '*.yaml'],
+        # And include any *.msg files found in the 'hello' package, too:
+        'perspectivefields.config': ['*.yaml'],
+    },
     install_requires=[
-        "detectron2@git+https://github.com/facebookresearch/detectron2.git@4e447553eb32b6e3784df0b8fca286935107b2fd",
-        "torchvision",
-        "torchaudio",
-        "openexr",
-        "gitpython",
-        "opencv-contrib-python",
         "albumentations",
+        "matplotlib",
+        "numpy",
+        "omegaconf",
+        "opencv-contrib-python",
+        "pillow",
         "pyequilib==0.3.0",
-        "skylibs",
+        "scikit-learn",
+        "scipy",
+        "setuptools",
         "timm",
-        "h5py",
-        "tensorboard",
-        "setuptools==59.5.0",
-        "gradio",
+        "torch",
+        "torchvision",
+        "yacs",
     ],
     author="Linyi Jin",
     author_email="jinlinyi@umich.edu",

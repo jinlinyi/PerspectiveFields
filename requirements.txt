@@ -1,23 +1,14 @@
+albumentations
+matplotlib
+numpy
+omegaconf
+opencv-contrib-python
+pillow
+pyequilib==0.3.0
+scikit-learn
+scipy
+setuptools
+timm
 torch
 torchvision
-numpy
-opencv-python
-
-# Detectron2
-git+https://github.com/facebookresearch/detectron2.git
-
-# MMCV
-openmim
-
-# Other dependencies
-openexr
-gitpython
-opencv-contrib-python
-albumentations
-pyequilib==0.3.0
-skylibs
-timm
-h5py
-tensorboard
-setuptools
-gradio
+yacs
