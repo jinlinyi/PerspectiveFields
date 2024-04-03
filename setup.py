@@ -17,7 +17,7 @@ setup(
         "timm",
         "h5py",
         "tensorboard",
-        "setuptools==59.5.0",
+        "setuptools==65.5.1",
         "gradio",
     ],
     author="Linyi Jin",
