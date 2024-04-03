@@ -249,7 +249,7 @@ class OverlapPatchEmbed(nn.Module):
         return x, H, W
 
 
-class MixVisionTransformer:
+class MixVisionTransformer(nn.Module):
     def __init__(
         self,
         img_size=224,

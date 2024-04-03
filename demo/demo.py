@@ -2,8 +2,8 @@ import cv2
 import torch
 import os
 import numpy as np
-from perspectivefields import PerspectiveFields
-from perspectivefields.utils import draw_perspective_fields, draw_from_r_p_f_cx_cy
+from perspective2d import PerspectiveFields
+from perspective2d.utils import draw_perspective_fields, draw_from_r_p_f_cx_cy
 
 
 
