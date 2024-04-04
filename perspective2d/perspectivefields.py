@@ -87,27 +87,32 @@ model_zoo = {
         "weights": "https://huggingface.co/spaces/jinlinyi/PerspectiveFields/resolve/main/models/paramnet_360cities_edina_rpf.pth",
         "config_file": "paramnet_360cities_edina_rpf.yaml",
         "param": True,
+        "description": "Trained on 360cities and EDINA dataset. Assumes centered principal point. Predicts roll, pitch and fov.",
     },
     "Paramnet-360Cities-edina-uncentered": {
         "weights": "https://huggingface.co/spaces/jinlinyi/PerspectiveFields/resolve/main/models/paramnet_360cities_edina_rpfpp.pth",
         "config_file": "paramnet_360cities_edina_rpfpp.yaml",
         "param": True,
+        "description": "Trained on 360cities and EDINA dataset. Predicts roll, pitch, fov and principal point.",
     },
     "PersNet-360Cities": {
         "weights": "https://huggingface.co/spaces/jinlinyi/PerspectiveFields/resolve/main/models/cvpr2023.pth",
         "config_file": "cvpr2023.yaml",
         "param": False,
+        "description": "Trained on 360cities. Predicts perspective fields.",
     },
     "PersNet_Paramnet-GSV-uncentered": {
         "weights": "https://huggingface.co/spaces/jinlinyi/PerspectiveFields/resolve/main/models/paramnet_gsv_rpfpp.pth",
         "config_file": "paramnet_gsv_rpfpp.yaml",
         "param": True,
+        "description": "Trained on GSV. Predicts roll, pitch, fov and principal point.",
     },
     # trained on GSV dataset, predicts Perspective Fields + camera parameters (roll, pitch, fov), assuming centered principal point
     "PersNet_Paramnet-GSV-centered": {
         "weights": "https://huggingface.co/spaces/jinlinyi/PerspectiveFields/resolve/main/models/paramnet_gsv_rpf.pth",
         "config_file": "paramnet_gsv_rpf.yaml",
         "param": True,
+        "description": "Trained on GSV. Assumes centered principal point. Predicts roll, pitch and fov.",
     },
 }
 
@@ -161,6 +166,15 @@ class PerspectiveFields(nn.Module):
     @property
     def device(self):
         return self.pixel_mean.device
+
+    @staticmethod
+    def versions():
+        for key in model_zoo:
+            print(f"{key}")
+            print(f"   - {model_zoo[key]['description']}")
+
+    def version(self):
+        return self.version
 
     def _init_weights(self):
         state_dict = None

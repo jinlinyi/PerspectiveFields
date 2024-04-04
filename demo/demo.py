@@ -50,6 +50,8 @@ def log_results(img_rgb, pred, output_folder, param_on):
                 tmp = tmp.transpose(2, 0, 1)
             field[key] = torch.tensor(tmp)
         return img, field
+
+    os.makedirs(output_folder, exist_ok=True)
     field = {
         "up": pred["pred_gravity_original"].cpu().detach(),
         "lati": pred["pred_latitude_original"].cpu().detach(),
@@ -137,6 +139,9 @@ def log_results(img_rgb, pred, output_folder, param_on):
     )
     cv2.imwrite(os.path.join(output_folder, "param_pred.png"), param_vis)
 
+
+PerspectiveFields.versions()
+
 version = 'Paramnet-360Cities-edina-centered'
 # version = 'Paramnet-360Cities-edina-uncentered'
 # version = 'PersNet_Paramnet-GSV-centered'
@@ -145,4 +150,5 @@ version = 'Paramnet-360Cities-edina-centered'
 pf_model = PerspectiveFields(version).eval().cuda()
 img_bgr = cv2.imread('assets/imgs/cityscape.jpg')
 predictions = pf_model.inference(img_bgr=img_bgr)
+
 log_results(img_bgr[..., ::-1], predictions, output_folder="debug", param_on=pf_model.param_on)

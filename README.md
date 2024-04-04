@@ -44,12 +44,12 @@ Updates
 <!-- omit in toc -->
 Table of Contents
 ------------------
+- [Inference](#inference)
 - [Environment Setup](#environment-setup)
   - [Inference only with minimal requirement](#inference-only-with-minimal-requirement)
   - [Development](#development)
 - [Model Zoo](#model-zoo)
 - [Coordinate Frame](#coordinate-frame)
-- [Inference](#inference)
 - [Camera Parameters to Perspective Fields](#camera-parameters-to-perspective-fields)
 - [Visualize Perspective Fields](#visualize-perspective-fields)
 - [Training](#training)
@@ -70,10 +70,36 @@ Table of Contents
 [6]: ./docs/test.md
 [7]: ./docs/models.md
 
+
+## Inference
+- [Live Demo 🤗](https://huggingface.co/spaces/jinlinyi/PerspectiveFields). 
+- We also provide notebook to [Predict Perspective Fields](./notebooks/predict_perspective_fields.ipynb). 
+- Alternatively, you can also run `demo.py`:
+```bash
+python demo/demo.py 
+```
+which contains simple inference code:
+```python
+import cv2
+from perspective2d import PerspectiveFields
+# specify model version
+version = 'Paramnet-360Cities-edina-centered'
+# load model
+pf_model = PerspectiveFields(version).eval().cuda()
+# load image
+img_bgr = cv2.imread('assets/imgs/cityscape.jpg')
+# inference
+predictions = pf_model.inference(img_bgr=img_bgr)
+```
+
+
 ## Environment Setup
 ### Inference only with minimal requirement
+PerspectiveFields requires python >= 3.8 and [PyTorch](https://pytorch.org/).
 ```bash
-TODO
+# install pytorch compatible to your system https://pytorch.org/get-started/previous-versions/
+conda install pytorch=1.10.0 torchvision cudatoolkit=11.3 -c pytorch
+pip install git+https://github.com/jinlinyi/PerspectiveFields.git@inference#egg=perspective2d
 ```
 
 
@@ -81,7 +107,7 @@ TODO
 PerspectiveFields requires python >= 3.8 and [PyTorch](https://pytorch.org/).
 
 
-| ***Pro tip:*** *use [mamba](https://github.com/mamba-org/mamba) in place of conda for much faster installs.*
+| ***Pro tip:*** *use [mamba](https://github.com/conda-forge/miniforge) in place of conda for much faster installs.*
 The dependencies can be installed by running:
 ```bash
 git clone git@github.com:jinlinyi/PerspectiveFields.git
@@ -90,14 +116,9 @@ conda create -n perspective python=3.9
 conda activate perspective
 # install pytorch compatible to your system https://pytorch.org/get-started/previous-versions/
 # conda install pytorch torchvision cudatoolkit -c pytorch
-conda install pytorch=1.10.0 torchvision torchaudio cudatoolkit=11.3 -c pytorch
-# conda packages
-conda install -c conda-forge openexr-python openexr
-# pip packages
-pip install -r requirements.txt
-# install mmcv with mim, I encountered some issue with pip install mmcv :(
-mim install mmcv
+conda install pytorch=1.10.0 torchvision cudatoolkit=11.3 -c pytorch
 # install Perspective Fields.
+cd PerspectiveFields
 pip install -e .
 ```
 
@@ -128,17 +149,6 @@ Extrinsics: `rotz(roll).dot(rotx(elevation)).dot(roty(azimuth))`
 
 </p>
 
-## Inference
-- [Live Demo 🤗](https://huggingface.co/spaces/jinlinyi/PerspectiveFields). 
-- We also provide notebook to [Predict Perspective Fields](./jupyter-notebooks/predict_perspective_fields.ipynb) and [Recover Camera Parameters](./jupyter-notebooks/perspective_paramnet.ipynb). 
-- Alternatively, you can also run `demo.py`:
-```bash
-python demo/demo.py \
---config-file <config-path> \ #../jupyter-notebooks/models/cvpr2023.yaml 
---input <input-path> \ #../assets/imgs 
---output <output-path> \ #debug 
---opts MODEL.WEIGHTS <ckpt-path> #../jupyter-notebooks/models/cvpr2023.pth
-```
 
 ## Camera Parameters to Perspective Fields
 Checkout [Jupyter Notebook](./jupyter-notebooks/camera2perspective.ipynb). 
