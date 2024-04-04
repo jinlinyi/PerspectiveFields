@@ -1,3 +1,4 @@
+from importlib import resources
 from pathlib import Path
 
 import numpy as np
@@ -121,8 +122,6 @@ class PerspectiveFields(nn.Module):
     def __init__(self, version="Paramnet-360Cities-edina-centered"):
         super().__init__()
         default_conf = get_perspective2d_cfg_defaults()
-        from importlib import resources
-
         # To get the path
         with resources.path(
             "perspective2d.config", model_zoo[version]["config_file"]
@@ -180,7 +179,8 @@ class PerspectiveFields(nn.Module):
         state_dict = None
         if self.version in model_zoo:
             state_dict = torch.hub.load_state_dict_from_url(
-                model_zoo[self.version]["weights"]
+                model_zoo[self.version]["weights"], 
+                map_location=torch.device('cpu'),
             )
             self.load_state_dict(state_dict, strict=False)
         elif self.cfg.MODEL.WEIGHTS is not None:
