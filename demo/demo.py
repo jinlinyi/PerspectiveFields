@@ -152,3 +152,10 @@ img_bgr = cv2.imread('assets/imgs/cityscape.jpg')
 predictions = pf_model.inference(img_bgr=img_bgr)
 
 log_results(img_bgr[..., ::-1], predictions, output_folder="debug", param_on=pf_model.param_on)
+
+print("\nexpected output: ")
+print("""roll: 4.54
+pitch: 48.88
+vfov: 52.82
+cx: 0.00
+cy: 0.00""")
