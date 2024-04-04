@@ -125,7 +125,7 @@ class PerspectiveFields(nn.Module):
 
         # To get the path
         with resources.path(
-            "perspectivefields.config", model_zoo[version]["config_file"]
+            "perspective2d.config", model_zoo[version]["config_file"]
         ) as config_path:
             default_conf.merge_from_file(str(config_path))
         # default_conf.merge_from_file(model_zoo[version]['config_file'])
