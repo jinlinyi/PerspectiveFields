@@ -94,7 +94,7 @@ For training and evaluation, please checkout the [`train_eval` branch](https://g
 
 
 ## Demo
-Here is a minimal script to run on a single image from `demo/demo.py`:
+Here is a minimal script to run on a single image, see [`demo/demo.py`](demo/demo.py):
 ```python
 import cv2
 from perspective2d import PerspectiveFields
@@ -136,7 +136,7 @@ Extrinsics: `rotz(roll).dot(rotx(elevation)).dot(roty(azimuth))`
 
 
 ## Camera Parameters to Perspective Fields
-Checkout [Jupyter Notebook](./jupyter-notebooks/camera2perspective.ipynb). 
+Checkout [Jupyter Notebook](./notebooks/camera2perspective.ipynb). 
 Perspective Fields can be calculated from camera parameters. If you prefer, you can also manually calculate the corresponding Up-vector and Latitude map by following Equations 1 and 2 in our paper.
 Our code currently supports:
 1) [Pinhole model](https://hedivision.github.io/Pinhole.html) [Hartley and Zisserman 2004] (Perspective Projection) 
