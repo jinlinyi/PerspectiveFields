@@ -1,36 +1,22 @@
-from typing import Callable, Dict, Optional, Tuple, Union
-
 import cv2
-import fvcore.nn.weight_init as weight_init
 import numpy as np
 import torch
-import torchvision.transforms as T
-from detectron2.config import configurable
-from detectron2.layers import Conv2d, ShapeSpec, get_norm
-from detectron2.modeling.backbone import Backbone, build_backbone
-from detectron2.modeling.meta_arch.build import META_ARCH_REGISTRY
-from detectron2.structures import ImageList
-from detectron2.utils.events import get_event_storage
-from detectron2.utils.registry import Registry
-from mmcv.cnn import ConvModule
 from torch import nn
 from torch.nn import functional as F
 
-from perspective2d.modeling.persformer_heads import BaseDecodeHead
-from perspective2d.utils import general_vfov_to_focal
-
-from ..backbone import ConvNeXt, LowLevelEncoder, build_mit_backbone
-from ..persformer_heads import build_persformer_heads
-from ..persformer_heads.decode_head import MLP, FeatureFusionBlock
-
-__all__ = ["ParamNet"]
-
-PARAM_NET_REGISTRY = Registry("PARAM_NET")
+from ...utils import general_vfov_to_focal
+from ..backbone import ConvNeXt
 
 
 def build_param_net(cfg):
     name = cfg.MODEL.PARAM_DECODER.NAME
-    return PARAM_NET_REGISTRY.get(name)(cfg)
+    if name == "ParamNet":
+        return ParamNet(cfg)
+    elif name == "ParamNetConvNextRegress":
+        return ParamNetConvNextRegress(cfg)
+    # Add more conditions here for other decoders
+    else:
+        raise ValueError(f"Unknown paramnet name: {name}")
 
 
 def to_numpy(x):
@@ -45,7 +31,6 @@ def to_numpy(x):
         return np.array(x)
 
 
-@PARAM_NET_REGISTRY.register()
 class ParamNet(nn.Module):
     def __init__(
         self,
@@ -183,7 +168,6 @@ class ParamNet(nn.Module):
         return {"principal point": cat}
 
 
-@PARAM_NET_REGISTRY.register()
 class ParamNetConvNextRegress(nn.Module):
     def __init__(
         self,
@@ -268,8 +252,12 @@ class ParamNetConvNextRegress(nn.Module):
             x = self.backbone(images)
         assert "rel_cx" in self.cfg.MODEL.PARAM_DECODER.PREDICT_PARAMS
         assert "rel_cy" in self.cfg.MODEL.PARAM_DECODER.PREDICT_PARAMS
-        param["pred_rel_pp"] = torch.cat(
-            [param["pred_rel_cx"].view(-1, 1), param["pred_rel_cy"].view(-1, 1)], dim=-1
+        predictions["pred_rel_pp"] = torch.cat(
+            [
+                predictions["pred_rel_cx"].view(-1, 1),
+                predictions["pred_rel_cy"].view(-1, 1),
+            ],
+            dim=-1,
         )
         vis_dict = {}
         _, h, w = batched_inputs[0]["image"].shape
@@ -281,7 +269,7 @@ class ParamNetConvNextRegress(nn.Module):
             color=(0, 0, 255),
             thickness=-1,
         )
-        pp_pred = param["pred_rel_pp"].cpu().numpy() * h + np.array([w, h]) / 2
+        pp_pred = predictions["pred_rel_pp"].cpu().numpy() * h + np.array([w, h]) / 2
         vis_img = cv2.circle(
             vis_img, pp_pred[0].astype(int), radius=8, color=(0, 255, 0), thickness=-1
         )

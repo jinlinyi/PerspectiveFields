@@ -1,34 +1,41 @@
-from typing import Callable, Dict, Optional, Tuple, Union
-
-import fvcore.nn.weight_init as weight_init
 import numpy as np
 import torch
-from detectron2.config import configurable
-from detectron2.layers import Conv2d, ShapeSpec, get_norm
-from detectron2.modeling.postprocessing import sem_seg_postprocess
-from detectron2.utils.registry import Registry
-from mmcv.cnn import ConvModule
 from torch import nn
 from torch.nn import functional as F
 
-from perspective2d.modeling.persformer_heads import BaseDecodeHead
-from perspective2d.utils import decode_bin_latitude, draw_latitude_field
-
+from ...utils import decode_bin_latitude, draw_latitude_field, pf_postprocess
+from ...utils.config import configurable
+from . import BaseDecodeHead
 from .decode_head import MLP, FeatureFusionBlock
-from .loss_fns import meanstd_tanh_norm_loss, msgil_norm_loss
-
-__all__ = ["build_latitude_decoder", "LATITUDE_DECODERS_REGISTRY", "LatitudeDecoder"]
-
-LATITUDE_DECODERS_REGISTRY = Registry("LATITUDE_DECODER")
+from .loss_fns import msgil_norm_loss
 
 
 def build_latitude_decoder(cfg, input_shape):
-    name = cfg.MODEL.LATITUDE_DECODER.NAME
-    # return LATITUDE_DECODERS_REGISTRY.get(name)(cfg, input_shape)
-    return LATITUDE_DECODERS_REGISTRY.get(name)(cfg, input_shape)
+    decoder_name = cfg.MODEL.LATITUDE_DECODER.NAME
+    if decoder_name == "LatitudeDecoder":
+        return LatitudeDecoder(cfg, input_shape)
+    # Add more conditions here for other decoders
+    else:
+        raise ValueError(f"Unknown decoder name: {decoder_name}")
 
 
-@LATITUDE_DECODERS_REGISTRY.register()
+class ConvModule(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size, padding):
+        super(ConvModule, self).__init__()
+        self.conv = nn.Conv2d(
+            in_channels=in_channels,
+            out_channels=out_channels,
+            kernel_size=kernel_size,
+            padding=padding,
+        )
+        self.relu = nn.ReLU(inplace=True)
+
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.relu(x)
+        return x
+
+
 class LatitudeDecoder(BaseDecodeHead):
     @configurable
     def __init__(self, feature_strides, loss_weight, **kwargs):
@@ -41,6 +48,7 @@ class LatitudeDecoder(BaseDecodeHead):
         self.loss_type = kwargs["loss_type"]
         self.num_classes = kwargs["num_classes"]
         self.ignore_value = kwargs["ignore_value"]
+        self.image_size = kwargs["image_size"]
         if self.loss_type == "regression":
             self.num_classes == 1
 
@@ -106,6 +114,7 @@ class LatitudeDecoder(BaseDecodeHead):
             kernel_size=3,
             padding=1,
         )
+
         self.linear_pred_latitude = nn.Conv2d(32, self.num_classes, kernel_size=1)
 
     @classmethod
@@ -123,6 +132,7 @@ class LatitudeDecoder(BaseDecodeHead):
             "loss_type": cfg.MODEL.LATITUDE_DECODER.LOSS_TYPE,
             "num_classes": cfg.MODEL.LATITUDE_DECODER.NUM_CLASSES,
             "ignore_value": cfg.MODEL.LATITUDE_DECODER.IGNORE_VALUE,
+            "image_size": cfg.DATALOADER.RESIZE,
         }
 
     def layers(self, features):
@@ -184,13 +194,11 @@ class LatitudeDecoder(BaseDecodeHead):
 
     def postprocess(self, results, batched_inputs, images):
         processed_results = []
-        for result, input_per_image, image_size in zip(
-            results, batched_inputs, images.image_sizes
-        ):
+        for result, input_per_image in zip(results, batched_inputs):
             height = input_per_image.get("height")
             width = input_per_image.get("width")
             if self.loss_type == "regression":
-                latimap = sem_seg_postprocess(result, image_size, height, width)[0]
+                latimap = pf_postprocess(result, self.image_size, height, width)[0]
                 latimap = torch.asin(latimap)
                 latimap = torch.rad2deg(latimap)
             elif self.loss_type == "classification":
@@ -198,7 +206,7 @@ class LatitudeDecoder(BaseDecodeHead):
                 latimap = decode_bin_latitude(latimap_bin, self.num_classes).unsqueeze(
                     0
                 )
-                latimap = sem_seg_postprocess(latimap, image_size, height, width)[0]
+                latimap = pf_postprocess(latimap, self.image_size, height, width)[0]
             else:
                 raise NotImplementedError
             processed_results.append(
@@ -232,7 +240,6 @@ class LatitudeDecoder(BaseDecodeHead):
                     import pdb
 
                     pdb.set_trace()
-                    pass
         elif self.loss_type == "classification":
             loss = F.cross_entropy(
                 predictions, targets, reduction="mean", ignore_index=self.ignore_value

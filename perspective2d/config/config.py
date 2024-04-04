@@ -1,23 +1,37 @@
-from detectron2.config import CfgNode as CN
+from yacs.config import CfgNode as CN
 
 
-def get_perspective2d_cfg_defaults(cfg):
+def get_perspective2d_cfg_defaults():
     """
     PerspectiveNet and ParamNet configs.
     """
+    cfg = CN()
+    cfg.VIS_PERIOD = 100
+    cfg.INPUT = CN()
     cfg.INPUT.ONLINE_CROP = False
+    cfg.INPUT.FORMAT = "BGR"
+    cfg.DATASETS = CN()
+    cfg.DATASETS.TRAIN = []
+    cfg.DATASETS.TEST = []
+
+    cfg.DATALOADER = CN()
     cfg.DATALOADER.AUGMENTATION = False
     cfg.DATALOADER.AUGMENTATION_TYPE = "geometry"
     cfg.DATALOADER.RESIZE = [320, 320]  # Height, Width
     cfg.DATALOADER.AUGMENTATION_FUN = "default"
     cfg.DATALOADER.NO_GEOMETRY_AUG = False  # requested by R3 cvpr2023
 
+    cfg.MODEL = CN()
     cfg.MODEL.GRAVITY_ON = False
     cfg.MODEL.LATITUDE_ON = False
     cfg.MODEL.RECOVER_RPF = False
     cfg.MODEL.RECOVER_PP = False
 
+    cfg.MODEL.BACKBONE = CN()
+    cfg.MODEL.BACKBONE.NAME = "mitb3"
+
     cfg.MODEL.PERSFORMER_HEADS = CN()
+    cfg.MODEL.WEIGHTS = ""
     cfg.MODEL.PERSFORMER_HEADS.NAME = "StandardPersformerHeads"
     cfg.MODEL.LATITUDE_DECODER = CN()
     cfg.MODEL.LATITUDE_DECODER.NAME = "LatitudeDecoder"
@@ -60,6 +74,8 @@ def get_perspective2d_cfg_defaults(cfg):
     """
     cfg.MODEL.CENTER_ON = False
     cfg.MODEL.HEIGHT_ON = False
+    cfg.MODEL.PIXEL_MEAN = [103.53, 116.28, 123.675]
+    cfg.MODEL.PIXEL_STD = [1.0, 1.0, 1.0]
 
     cfg.MODEL.FPN_HEADS = CN()
     cfg.MODEL.FPN_HEADS.NAME = "StandardFPNHeads"

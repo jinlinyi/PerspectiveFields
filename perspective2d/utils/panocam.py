@@ -1,27 +1,22 @@
-import io
-import os
-import random
-from glob import glob
-
 import cv2
 import equilib
 import imageio
-import matplotlib.pyplot as plt
 import numpy as np
 from equilib import equi2pers
-from imageio import imread, imsave
 from sklearn.preprocessing import normalize
-from tqdm import tqdm
 
 assert equilib.__version__ == "0.3.0"
 from typing import Union
 
-import matplotlib.cm as cm
 import torch
 from equilib import grid_sample
 from numpy.lib.scimath import sqrt as csqrt
 from PIL import Image
 from torchvision import transforms
+
+
+def diskradius(xi, f):  # compute the disk radius when the image is catadioptric
+    return np.sqrt(-(f * f) / (1 - xi * xi))
 
 
 def create_rotation_matrix(
@@ -134,7 +129,6 @@ class PanoCam:
         self.pano_path = pano_path
         self.device = device
 
-
     def get_image(
         self,
         vfov=85,
@@ -199,7 +193,6 @@ class PanoCam:
         )
         return crop, horizon, vvp
 
-
     @staticmethod
     def crop_equi(equi_img, vfov, im_w, im_h, azimuth, elevation, roll, ar, mode):
         """
@@ -255,7 +248,6 @@ class PanoCam:
             crop = np.asarray(crop.to("cpu").numpy(), dtype=equi_img.dtype)
         return crop
 
-
     @staticmethod
     def getGravityField(im_h, im_w, absvvp):
         """
@@ -280,7 +272,6 @@ class PanoCam:
         arrow_map = arrow.reshape(im_h, im_w, 2)
         return arrow_map
 
-
     @staticmethod
     def getAbsVVP(im_h, im_w, horizon, vvp):
         """get absolute vertical vanishing point from horizon line and relative vertical vanishing point
@@ -291,7 +282,7 @@ class PanoCam:
             horizon ([float, float]): fraction of image left/right border intersection with respect to image height
             vvp ([float, float, {-1, 1}]): relative vertical vanishing point, defined as vertical vanishing point divided by image height
         Returns:
-            vvp_abs ([float, float, float]): absolute vertical vanishing point in image frame (top left corner as 0), 
+            vvp_abs ([float, float, float]): absolute vertical vanishing point in image frame (top left corner as 0),
             vvp_abs[2] in {-1, 1} depending on if it is south or north pole, or if the up vectors are pointing towards (+1) or away (-1) from it.
         """
         if not np.isinf(vvp).any():
@@ -563,7 +554,7 @@ class PanoCam:
         l = -np.arctan2(y_world, np.sqrt(x_world**2 + z_world**2)) / np.pi * 180
 
         return l.reshape(im_h, im_w)
-    
+
     @staticmethod
     def crop_distortion(image360_path, f, xi, H, W, az, el, roll):
         """
@@ -753,12 +744,8 @@ class PanoCam:
 
         # -1. Projection on the image plane
 
-        X_Cam = (
-            X_Sph * f / (xi * csqrt(X_Sph**2 + Y_Sph**2 + Z_Sph**2) + Z_Sph) + u0
-        )
-        Y_Cam = (
-            -Y_Sph * f / (xi * csqrt(X_Sph**2 + Y_Sph**2 + Z_Sph**2) + Z_Sph) + v0
-        )
+        X_Cam = X_Sph * f / (xi * csqrt(X_Sph**2 + Y_Sph**2 + Z_Sph**2) + Z_Sph) + u0
+        Y_Cam = -Y_Sph * f / (xi * csqrt(X_Sph**2 + Y_Sph**2 + Z_Sph**2) + Z_Sph) + v0
         up = np.stack((X_Cam - grid_x, Y_Cam - grid_y)).transpose(1, 2, 0)
         up = normalize(up.reshape(-1, 2)).reshape(up.shape)
 
@@ -843,4 +830,3 @@ def blend_color(img, color, alpha=0.2):
 
     outImage = outImage.astype(np.uint8)
     return outImage
-

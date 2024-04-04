@@ -8,10 +8,6 @@ from functools import partial
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from detectron2.layers import ShapeSpec
-from detectron2.modeling.backbone import Backbone
-from detectron2.modeling.backbone.build import BACKBONE_REGISTRY
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 
 
@@ -253,7 +249,7 @@ class OverlapPatchEmbed(nn.Module):
         return x, H, W
 
 
-class MixVisionTransformer(Backbone):
+class MixVisionTransformer(nn.Module):
     def __init__(
         self,
         img_size=224,
@@ -539,13 +535,9 @@ class mit_b3(MixVisionTransformer):
         return 32
 
 
-@BACKBONE_REGISTRY.register()
-def build_mit_backbone(cfg, input_shape: ShapeSpec):
-    """
-    Args:
-        cfg: a detectron2 CfgNode
-    Returns:
-        backbone (Backbone): backbone module, must be a subclass of :class:`Backbone`.
-    """
-    backbone = mit_b3()
-    return backbone
+def build_backbone(cfg):
+    name = cfg.MODEL.BACKBONE.NAME
+    if name == "mitb3":
+        return mit_b3()
+    else:
+        raise ValueError(f"Unknown backbone name: {name}")

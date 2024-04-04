@@ -1,7 +1,5 @@
 # Reference: https://github.com/aim-uofa/AdelaiDepth/tree/main/LeReS
 import torch
-from torch import nn
-from torch.nn import functional as F
 
 
 def one_scale_gradient_loss(pred_scale, gt, mask):

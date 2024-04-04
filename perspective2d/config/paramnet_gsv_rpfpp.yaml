@@ -1,0 +1,48 @@
+DATALOADER:
+  RESIZE:
+  - 320
+  - 320
+DATASETS:
+  TEST:
+  - gsv_test_crop_uniform
+  TRAIN:
+  - gsv_train
+DEBUG_ON: false
+MODEL:
+  GRAVITY_DECODER:
+    IGNORE_VALUE: 72
+    LOSS_TYPE: regression
+    LOSS_WEIGHT: 1.0
+    NAME: GravityDecoder
+    NUM_CLASSES: 73
+  GRAVITY_ON: true
+  LATITUDE_DECODER:
+    IGNORE_VALUE: -1
+    LOSS_TYPE: regression
+    LOSS_WEIGHT: 1.0
+    NAME: LatitudeDecoder
+    NUM_CLASSES: 1
+  LATITUDE_ON: true
+  PARAM_DECODER:
+    INPUT_SIZE: 64
+    LOSS_TYPE: regression
+    LOSS_WEIGHT: 0.1
+    NAME: ParamNetConvNextRegress
+    PREDICT_PARAMS:
+    - roll
+    - pitch
+    - general_vfov
+    - rel_cx
+    - rel_cy
+  PERSFORMER_HEADS:
+    NAME: StandardPersformerHeads
+  PIXEL_MEAN:
+  - 103.53
+  - 116.28
+  - 123.675
+  PIXEL_STD:
+  - 1.0
+  - 1.0
+  - 1.0
+  RECOVER_PP: true
+  RECOVER_RPF: true

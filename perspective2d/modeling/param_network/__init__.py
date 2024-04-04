@@ -1,1 +1,1 @@
-from .param_network import build_param_net
+from .param_network import *

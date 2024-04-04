@@ -1,30 +1,24 @@
-import math
-
-import albumentations as A
 import cv2
-import matplotlib
-import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.optimize
 import torch
-from detectron2.utils.colormap import colormap
+import torch.nn.functional as F
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 
-from perspective2d.utils.visualizer import VisualizerPerspective
-
 from .panocam import PanoCam
+from .visualizer import VisualizerPerspective
 
 
 def general_vfov(d_cx, d_cy, h, focal, degree):
     """
     Calculate the general vertical field of view (gvfov) given the camera intrinsic parameters.
 
-    The general vertical field of view (gvfov) is a concept employed to define the field of view (FoV) for images that may be cropped or have an off-center principal point. 
-    
+    The general vertical field of view (gvfov) is a concept employed to define the field of view (FoV) for images that may be cropped or have an off-center principal point.
+
     The gfov is defined as follows:
-        Consider the camera's pinhole as 'O'. Let 'M1' and 'M2' represent the midpoints of the top and bottom edges of the image, respectively. 
-        The gfov is defined as the angle subtended by the lines OM1 and OM2 at 'O'. 
+        Consider the camera's pinhole as 'O'. Let 'M1' and 'M2' represent the midpoints of the top and bottom edges of the image, respectively.
+        The gfov is defined as the angle subtended by the lines OM1 and OM2 at 'O'.
 
     This function can handle parameters given in two ways:
     1. Relative to the image height: In this case, h should be 1, and d_cx, d_cy, and focal should be normalized by the image height.
@@ -54,18 +48,18 @@ def general_vfov_to_focal(rel_cx, rel_cy, h, gvfov, degree):
     """
     Converts a given general vertical field of view (gvfov) to the equivalent focal length.
 
-    The general vertical field of view (gvfov) is a concept employed to define the field of view (FoV) for images that may be cropped or have an off-center principal point. 
-    
+    The general vertical field of view (gvfov) is a concept employed to define the field of view (FoV) for images that may be cropped or have an off-center principal point.
+
     The gfov is defined as follows:
-        Consider the camera's pinhole as 'O'. Let 'M1' and 'M2' represent the midpoints of the top and bottom edges of the image, respectively. 
-        The gfov is defined as the angle subtended by the lines OM1 and OM2 at 'O'. 
+        Consider the camera's pinhole as 'O'. Let 'M1' and 'M2' represent the midpoints of the top and bottom edges of the image, respectively.
+        The gfov is defined as the angle subtended by the lines OM1 and OM2 at 'O'.
 
     This function accepts parameters in either relative terms or absolute pixel values:
-    1. Relative to the image height: In this case, h should be 1, and d_cx, d_cy should be normalized by the image height. 
+    1. Relative to the image height: In this case, h should be 1, and d_cx, d_cy should be normalized by the image height.
     2. Absolute pixel values: In this case, h should be the image height in pixels, and d_cx, d_cy should be provided in pixels.
 
     Args:
-        rel_cx (float): Horizontal offset of the principal point (cx) from the image center. 
+        rel_cx (float): Horizontal offset of the principal point (cx) from the image center.
                         It's in absolute terms if h is set to image height, else it's relative (cx coordinate / image width - 0.5).
         rel_cy (float): Vertical offset of the principal point (cy) from the image center.
                         It's in absolute terms if h is set to image height, else it's relative (cy coordinate / image height - 0.5).
@@ -74,7 +68,7 @@ def general_vfov_to_focal(rel_cx, rel_cy, h, gvfov, degree):
         degree (bool): Indicator for the gvfov unit. If True, gvfov is assumed to be in degrees. If False, it's in radians.
 
     Returns:
-        float: Focal length, derived from the input gvfov and the principal point offsets (rel_cx, rel_cy). 
+        float: Focal length, derived from the input gvfov and the principal point offsets (rel_cx, rel_cy).
                It is relative to the image height if h is set to 1, else it's an absolute value (in pixels).
     """
 
@@ -187,7 +181,7 @@ def draw_perspective_fields(
     Returns:
         image blended with perspective fields.
     """
-    visualizer = VisualizerPerspective(img_rgb[:, :, ::-1].copy())
+    visualizer = VisualizerPerspective(img_rgb.copy())
     vis_output = visualizer.draw_lati(latimap)
     if torch.is_tensor(up):
         up = up.numpy().transpose(1, 2, 0)
@@ -203,7 +197,7 @@ def draw_perspective_fields(
         color = (0, 1, 0)
     vis_output = visualizer.draw_arrow(x, y, end[:, 0], -end[:, 1], color=color)
     if return_img:
-        return vis_output.get_image()[:, :, ::-1]
+        return vis_output.get_image()
     else:
         return vis_output
 
@@ -232,7 +226,7 @@ def draw_up_field(
     """
     if torch.is_tensor(vector_field):
         vector_field = vector_field.numpy().transpose(1, 2, 0)
-    visualizer = VisualizerPerspective(img_rgb[:, :, ::-1].copy())
+    visualizer = VisualizerPerspective(img_rgb.copy())
     im_h, im_w, _ = img_rgb.shape
     x, y = np.meshgrid(
         # np.arange(0, im_w, im_w//20),
@@ -247,7 +241,7 @@ def draw_up_field(
     #     end = (vector_field[:, y, x] * 30).numpy()
     vis_output = visualizer.draw_arrow(x, y, end[:, 0], -end[:, 1], color=color)
     if return_img:
-        return vis_output.get_image()[:, :, ::-1]
+        return vis_output.get_image()
     else:
         return vis_output
 
@@ -341,7 +335,7 @@ def draw_from_r_p_f_cx_cy(
        Generate latitude map and gravity field from camera parameters
 
     Args:
-        img (np.ndarray): input image
+        img (np.ndarray): input image (RGB)
         roll (float): rotation of camera about the world frame z-axis
         pitch (float): rotation of camera about the world frame x-axis
         vfov (float): vertical field of view
@@ -355,8 +349,9 @@ def draw_from_r_p_f_cx_cy(
         draw_lat (bool, optional): bool to specify if latitude map should be drawn. Defaults to True.
 
     Returns:
-        np.ndarray: img with up vectors drawn on (if draw_up == True)
+        np.ndarray: rgb img with up vectors drawn on (if draw_up == True)
                     and latitude map drawn on (if draw_lat == True)
+
     """
     im_h, im_w, _ = img.shape
     if mode == "deg":
@@ -422,10 +417,10 @@ def draw_latitude_field(
     Returns:
         np array or VisImage depending on return_img
     """
-    visualizer = VisualizerPerspective(img_rgb[:, :, ::-1].copy())
+    visualizer = VisualizerPerspective(img_rgb.copy())
     vis_output = visualizer.draw_lati(latimap, alpha_contourf, alpha_contour)
     if return_img:
-        return vis_output.get_image()[:, :, ::-1]
+        return vis_output.get_image()
     else:
         return vis_output
 
@@ -479,3 +474,30 @@ def draw_prediction_distribution(pred, gt):
     img_rgba = buffer.reshape(height, width, 4)
     rgb, alpha = np.split(img_rgba, [3], axis=2)
     return rgb
+
+
+def pf_postprocess(result, img_size, output_height, output_width):
+    """
+    Reference https://github.com/facebookresearch/detectron2/blob/main/detectron2/modeling/postprocessing.py#L77C1-L100C18
+    Return semantic segmentation predictions in the original resolution.
+
+    The input images are often resized when entering semantic segmentor. Moreover, in same
+    cases, they also padded inside segmentor to be divisible by maximum network stride.
+    As a result, we often need the predictions of the segmentor in a different
+    resolution from its inputs.
+
+    Args:
+        result (Tensor): semantic segmentation prediction logits. A tensor of shape (C, H, W),
+            where C is the number of classes, and H, W are the height and width of the prediction.
+        img_size (tuple): image size that segmentor is taking as input.
+        output_height, output_width: the desired output resolution.
+
+    Returns:
+        semantic segmentation prediction (Tensor): A tensor of the shape
+            (C, output_height, output_width) that contains per-pixel soft predictions.
+    """
+    result = result[:, : img_size[0], : img_size[1]].expand(1, -1, -1, -1)
+    result = F.interpolate(
+        result, size=(output_height, output_width), mode="bilinear", align_corners=False
+    )[0]
+    return result

@@ -1,14 +1,10 @@
-import math
-import types
+import warnings
 from abc import ABCMeta, abstractmethod
-from functools import partial
 
-import timm
 import torch
 import torch.nn as nn
 import torch.nn.functional
 import torch.nn.functional as F
-from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 
 ############################################################
 
@@ -120,7 +116,8 @@ class BaseDecodeHead(nn.Module, metaclass=ABCMeta):
         self.align_corners = align_corners
 
         if sampler is not None:
-            self.sampler = build_pixel_sampler(sampler, context=self)
+            # self.sampler = build_pixel_sampler(sampler, context=self)
+            raise NotImplementedError
         else:
             self.sampler = None
 
@@ -205,7 +202,6 @@ class BaseDecodeHead(nn.Module, metaclass=ABCMeta):
     @abstractmethod
     def forward(self, inputs):
         """Placeholder of forward function."""
-        pass
 
 
 class LowLevelEncoder(nn.Module):

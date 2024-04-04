@@ -1,33 +1,41 @@
-from typing import Callable, Dict, Optional, Tuple, Union
-
-import fvcore.nn.weight_init as weight_init
 import numpy as np
 import torch
-from detectron2.config import configurable
-from detectron2.layers import Conv2d, ShapeSpec, get_norm
-from detectron2.modeling.postprocessing import sem_seg_postprocess
-from detectron2.utils.registry import Registry
-from mmcv.cnn import ConvModule
 from torch import nn
 from torch.nn import functional as F
 
-from perspective2d.modeling.persformer_heads import BaseDecodeHead
-from perspective2d.utils import decode_bin, draw_up_field
-
+from ...utils import decode_bin, draw_up_field, pf_postprocess
+from ...utils.config import configurable
+from . import BaseDecodeHead
 from .decode_head import MLP, FeatureFusionBlock
-from .loss_fns import meanstd_tanh_norm_loss, msgil_norm_loss
-
-__all__ = ["build_gravity_decoder", "GRAVITY_DECODERS_REGISTRY", "GravityDecoder"]
-
-GRAVITY_DECODERS_REGISTRY = Registry("GRAVITY_HEADS")
+from .loss_fns import msgil_norm_loss
 
 
 def build_gravity_decoder(cfg, input_shape):
-    name = cfg.MODEL.GRAVITY_DECODER.NAME
-    return GRAVITY_DECODERS_REGISTRY.get(name)(cfg, input_shape)
+    decoder_name = cfg.MODEL.GRAVITY_DECODER.NAME
+    if decoder_name == "GravityDecoder":
+        return GravityDecoder(cfg, input_shape)
+    # Add more conditions here for other decoders
+    else:
+        raise ValueError(f"Unknown decoder name: {decoder_name}")
 
 
-@GRAVITY_DECODERS_REGISTRY.register()
+class ConvModule(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size, padding):
+        super(ConvModule, self).__init__()
+        self.conv = nn.Conv2d(
+            in_channels=in_channels,
+            out_channels=out_channels,
+            kernel_size=kernel_size,
+            padding=padding,
+        )
+        self.relu = nn.ReLU(inplace=True)
+
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.relu(x)
+        return x
+
+
 class GravityDecoder(BaseDecodeHead):
     @configurable
     def __init__(self, feature_strides, loss_weight, **kwargs):
@@ -50,6 +58,7 @@ class GravityDecoder(BaseDecodeHead):
         self.num_classes = kwargs["num_classes"]
         self.ignore_value = kwargs["ignore_value"]
         self.loss_type = kwargs["loss_type"]
+        self.image_size = kwargs["image_size"]
         if self.loss_type == "regression":
             self.num_classes = 2
 
@@ -124,6 +133,7 @@ class GravityDecoder(BaseDecodeHead):
             "decoder_params": dict(embed_dim=768),
             "loss_weight": cfg.MODEL.GRAVITY_DECODER.LOSS_WEIGHT,
             "loss_type": cfg.MODEL.GRAVITY_DECODER.LOSS_TYPE,
+            "image_size": cfg.DATALOADER.RESIZE,
         }
 
     def layers(self, features):
@@ -211,7 +221,6 @@ class GravityDecoder(BaseDecodeHead):
                     import pdb
 
                     pdb.set_trace()
-                    pass
         elif self.loss_type == "classification":
             loss = F.cross_entropy(
                 predictions, targets, reduction="mean", ignore_index=self.ignore_value
@@ -220,7 +229,6 @@ class GravityDecoder(BaseDecodeHead):
                 import pdb
 
                 pdb.set_trace()
-                pass
             losses = {"loss_gravity": loss * self.loss_weight}
         else:
             raise NotImplementedError
@@ -228,9 +236,7 @@ class GravityDecoder(BaseDecodeHead):
 
     def postprocess(self, results, batched_inputs, images):
         processed_results = []
-        for result, input_per_image, image_size in zip(
-            results, batched_inputs, images.image_sizes
-        ):
+        for result, input_per_image in zip(results, batched_inputs):
             height = input_per_image.get("height")
             width = input_per_image.get("width")
             if self.loss_type == "regression":
@@ -240,12 +246,14 @@ class GravityDecoder(BaseDecodeHead):
             else:
                 raise NotImplementedError
             scale = (
-                torch.tensor([[width / image_size[1]], [height / image_size[0]]])
+                torch.tensor(
+                    [[width / self.image_size[1]], [height / self.image_size[0]]]
+                )
                 .unsqueeze(-1)
                 .to(vec.device)
             )
             vec_original = vec * scale
-            vec_original = sem_seg_postprocess(vec_original, image_size, height, width)
+            vec_original = pf_postprocess(vec_original, self.image_size, height, width)
             vec_original = F.normalize(vec_original, dim=0)
             processed_results.append(
                 {"pred_gravity": result, "pred_gravity_original": vec_original}

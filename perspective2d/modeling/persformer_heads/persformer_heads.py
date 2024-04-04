@@ -1,28 +1,16 @@
 import inspect
-import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
 
 import numpy as np
 import torch
-from detectron2.config import configurable
-from detectron2.structures import ImageList
-from detectron2.utils.events import get_event_storage
-from detectron2.utils.registry import Registry
 from torch import nn
 from torch.nn import functional as F
 
+from ...utils.config import configurable
 from .gravity_head import build_gravity_decoder
 from .latitude_head import build_latitude_decoder
 
-PERSFORMER_HEADS_REGISTRY = Registry("PERSFORMER_HEADS")
 
-
-def build_persformer_heads(cfg, input_shape):
-    name = cfg.MODEL.PERSFORMER_HEADS.NAME
-    return PERSFORMER_HEADS_REGISTRY.get(name)(cfg, input_shape)
-
-
-@PERSFORMER_HEADS_REGISTRY.register()
 class StandardPersformerHeads(torch.nn.Module):
     @configurable
     def __init__(
@@ -146,3 +134,12 @@ class StandardPersformerHeads(torch.nn.Module):
             align_corners=False,
         )[0]
         return score_maps
+
+
+def build_persformer_heads(cfg, input_shape):
+    persformer_name = cfg.MODEL.PERSFORMER_HEADS.NAME
+    if persformer_name == "StandardPersformerHeads":
+        return StandardPersformerHeads(cfg, input_shape)
+    # Add more conditions here for other decoders
+    else:
+        raise ValueError(f"Unknown arch name: {persformer_name}")
