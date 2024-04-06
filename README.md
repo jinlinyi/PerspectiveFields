@@ -1,5 +1,5 @@
 <!-- omit in toc -->
-Perspective Fields for Single Image Camera Calibration
+Perspective Fields for Single Image Camera Calibration [Train / Eval branch]
 ================================================================
 [![Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue)](https://huggingface.co/spaces/jinlinyi/PerspectiveFields)
 
@@ -35,26 +35,27 @@ We propose Perspective Fields as a representation that models the local perspect
 </p>
 
 <!-- omit in toc -->
-Updates
+
+Note
 ------------------
-- We released a new model trained on [360cities](https://www.360cities.net/) and [EDINA](https://github.com/tien-d/EgoDepthNormal/blob/main/README_dataset.md) dataset, consisting of indoor🏠, outdoor🏙️, natural🌳, and egocentric👋 data!
-- Live demo released 🤗. https://huggingface.co/spaces/jinlinyi/PerspectiveFields. Thanks Huggingface for funding this demo!
+This branch is for training / evaluation, which we use [Detectron2](https://github.com/facebookresearch/detectron2) framework. If you want to run inference with minimal package dependency, please checkout the [`main` branch](https://github.com/jinlinyi/PerspectiveFields/tree/main).
 
 <!-- omit in toc -->
 Table of Contents
 ------------------
+- [Note](#note)
 - [Environment Setup](#environment-setup)
-- [Model Zoo](#model-zoo)
-- [Coordinate Frame](#coordinate-frame)
-- [Inference](#inference)
-- [Camera Parameters to Perspective Fields](#camera-parameters-to-perspective-fields)
-- [Visualize Perspective Fields](#visualize-perspective-fields)
 - [Training](#training)
     - [Datasets](#datasets)
     - [Training PerspectiveNet + ParamNet](#training-perspectivenet--paramnet)
 - [Testing](#testing)
     - [Datasets](#datasets-1)
     - [Testing PerspectiveNet + ParamNet](#testing-perspectivenet--paramnet)
+- [Model Zoo](#model-zoo)
+- [Coordinate Frame](#coordinate-frame)
+- [Inference](#inference)
+- [Camera Parameters to Perspective Fields](#camera-parameters-to-perspective-fields)
+- [Visualize Perspective Fields](#visualize-perspective-fields)
 - [Citation](#citation)
 - [Acknowledgment](#acknowledgment)
 
@@ -91,107 +92,6 @@ mim install mmcv
 # install Perspective Fields.
 pip install -e .
 ```
-
-
-## Model Zoo
-
-NOTE: Extract model weights under `perspectiveField/models`.
-
-| Model Name and Weights                                                                                                    | Training Dataset                                                                                                          | Config File                                  | Outputs                                                           | Expected input                                                                                     |
-| ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| [NEW][Paramnet-360Cities-edina-centered](https://www.dropbox.com/s/z2dja70bgy007su/paramnet_360cities_edina_rpf.pth)       | [360cities](https://www.360cities.net/) and [EDINA](https://github.com/tien-d/EgoDepthNormal/blob/main/README_dataset.md) | [paramnet_360cities_edina_rpf.yaml](models/paramnet_360cities_edina_rpf.yaml) | Perspective Field + camera parameters (roll, pitch, vfov)         | Uncropped, indoor🏠, outdoor🏙️, natural🌳, and egocentric👋 data                              |
-| [NEW][Paramnet-360Cities-edina-uncentered](https://www.dropbox.com/s/nt29e1pi83mm1va/paramnet_360cities_edina_rpfpp.pth)  | [360cities](https://www.360cities.net/) and [EDINA](https://github.com/tien-d/EgoDepthNormal/blob/main/README_dataset.md) | [paramnet_360cities_edina_rpfpp.yaml](models/paramnet_360cities_edina_rpfpp.yaml) | Perspective Field + camera parameters (roll, pitch, vfov, cx, cy) | Cropped, indoor🏠, outdoor🏙️, natural🌳, and egocentric👋 data                                |
-| [PersNet-360Cities](https://www.dropbox.com/s/czqrepqe7x70b7y/cvpr2023.pth)                                               | [360cities](https://www.360cities.net)                                                                                    | [cvpr2023.yaml](models/cvpr2023.yaml)              | Perspective Field                                                 | Indoor🏠, outdoor🏙️, and natural🌳 data.                                                     |
-| [PersNet_paramnet-GSV-centered](https://www.dropbox.com/s/g6xwbgnkggapyeu/paramnet_gsv_rpf.pth)                           | [GSV](https://research.google/pubs/pub36899/)                                                                             | [paramnet_gsv_rpf.yaml](models/paramnet_gsv_rpf.yaml)      | Perspective Field + camera parameters (roll, pitch, vfov)         | Uncropped, street view🏙️ data.                                                              |
-| [PersNet_Paramnet-GSV-uncentered](https://www.dropbox.com/s/ufdadxigewakzlz/paramnet_gsv_rpfpp.pth)                       | [GSV](https://research.google/pubs/pub36899/)                                                                             | [paramnet_gsv_rpfpp.yaml](models/paramnet_gsv_rpfpp.yaml)    | Perspective Field + camera parameters (roll, pitch, vfov, cx, cy) | Cropped, street view🏙️ data.                                                               |
-
-## Coordinate Frame
-
-<p align="center">
-
-![alt text](assets/coordinate.png)
-
-`yaw / azimuth`: camera rotation about the y-axis
-`pitch / elevation`: camera rotation about the x-axis
-`roll`: camera rotation about the z-axis
-
-Extrinsics: `rotz(roll).dot(rotx(elevation)).dot(roty(azimuth))`
-
-</p>
-
-## Inference
-- [Live Demo 🤗](https://huggingface.co/spaces/jinlinyi/PerspectiveFields). 
-- We also provide notebook to [Predict Perspective Fields](./jupyter-notebooks/predict_perspective_fields.ipynb) and [Recover Camera Parameters](./jupyter-notebooks/perspective_paramnet.ipynb). 
-- Alternatively, you can also run `demo.py`:
-```bash
-python demo/demo.py \
---config-file <config-path> \ #../jupyter-notebooks/models/cvpr2023.yaml 
---input <input-path> \ #../assets/imgs 
---output <output-path> \ #debug 
---opts MODEL.WEIGHTS <ckpt-path> #../jupyter-notebooks/models/cvpr2023.pth
-```
-
-## Camera Parameters to Perspective Fields
-Checkout [Jupyter Notebook](./jupyter-notebooks/camera2perspective.ipynb). 
-Perspective Fields can be calculated from camera parameters. If you prefer, you can also manually calculate the corresponding Up-vector and Latitude map by following Equations 1 and 2 in our paper.
-Our code currently supports:
-1) [Pinhole model](https://hedivision.github.io/Pinhole.html) [Hartley and Zisserman 2004] (Perspective Projection) 
-```python
-from perspective2d.utils.panocam import PanoCam
-# define parameters
-roll = 0
-pitch = 20
-vfov = 70
-width = 640
-height = 480
-# get Up-vectors.
-up = PanoCam.get_up(np.radians(vfov), width, height, np.radians(pitch), np.radians(roll))
-# get Latitude.
-lati = PanoCam.get_lat(np.radians(vfov), width, height, np.radians(pitch), np.radians(roll))
-```
-2) [Unified Spherical Model](https://drive.google.com/file/d/1pZgR3wNS6Mvb87W0ixOHmEVV6tcI8d50/view) [Barreto 2006; Mei and Rives 2007] (Distortion). 
-```python
-xi = 0.5 # distortion parameter from Unified Spherical Model
-
-x = -np.sin(np.radians(vfov/2))
-z = np.sqrt(1 - x**2)
-f_px_effective = -0.5*(width/2)*(xi+z)/x
-crop, _, _, _, up, lat, xy_map = PanoCam.crop_distortion(equi_img,
-                                             f=f_px_effective,
-                                             xi=xi,
-                                             H=height,
-                                             W=width,
-                                             az=yaw, # degrees
-                                             el=-pitch,
-                                             roll=-roll)
-```
-
-## Visualize Perspective Fields
-We provide a one-line code to blend Perspective Fields onto input image.
-```python
-import matplotlib.pyplot as plt
-from perspective2d.utils import draw_perspective_fields
-# Draw up and lati on img. lati is in radians.
-blend = draw_perspective_fields(img, up, lati)
-# visualize with matplotlib
-plt.imshow(blend)
-plt.show()
-```
-Perspective Fields can serve as an easy visual check for correctness of the camera parameters.
-
-- For example, we can visualize the Perspective Fields based on calibration results from this awesome [repo](https://github.com/dompm/spherical-distortion-dataset).
-
-
-<p align="center">
-
-![alt text](assets/distortion_vis.png)
-
-- Left: We plot the perspective fields based on the numbers printed on the image, they look accurate😊;
-
-- Mid: If we try a number that is 10% off (0.72*0.9=0.648), we see mismatch in Up directions at the top right corner;
-
-- Right: If distortion is 20% off (0.72*0.8=0.576), the mismatch becomes more obvious.
-</p>
 
 ## Training
 
@@ -323,6 +223,107 @@ python -W ignore demo/test_param_network.py \
 ```
 
 </details>
+
+
+## Model Zoo
+
+NOTE: Extract model weights under `perspectiveField/models`.
+
+| Model Name and Weights                                                                                                    | Training Dataset                                                                                                          | Config File                                  | Outputs                                                           | Expected input                                                                                     |
+| ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| [NEW][Paramnet-360Cities-edina-centered](https://www.dropbox.com/s/z2dja70bgy007su/paramnet_360cities_edina_rpf.pth)       | [360cities](https://www.360cities.net/) and [EDINA](https://github.com/tien-d/EgoDepthNormal/blob/main/README_dataset.md) | [paramnet_360cities_edina_rpf.yaml](models/paramnet_360cities_edina_rpf.yaml) | Perspective Field + camera parameters (roll, pitch, vfov)         | Uncropped, indoor🏠, outdoor🏙️, natural🌳, and egocentric👋 data                              |
+| [NEW][Paramnet-360Cities-edina-uncentered](https://www.dropbox.com/s/nt29e1pi83mm1va/paramnet_360cities_edina_rpfpp.pth)  | [360cities](https://www.360cities.net/) and [EDINA](https://github.com/tien-d/EgoDepthNormal/blob/main/README_dataset.md) | [paramnet_360cities_edina_rpfpp.yaml](models/paramnet_360cities_edina_rpfpp.yaml) | Perspective Field + camera parameters (roll, pitch, vfov, cx, cy) | Cropped, indoor🏠, outdoor🏙️, natural🌳, and egocentric👋 data                                |
+| [PersNet-360Cities](https://www.dropbox.com/s/czqrepqe7x70b7y/cvpr2023.pth)                                               | [360cities](https://www.360cities.net)                                                                                    | [cvpr2023.yaml](models/cvpr2023.yaml)              | Perspective Field                                                 | Indoor🏠, outdoor🏙️, and natural🌳 data.                                                     |
+| [PersNet_paramnet-GSV-centered](https://www.dropbox.com/s/g6xwbgnkggapyeu/paramnet_gsv_rpf.pth)                           | [GSV](https://research.google/pubs/pub36899/)                                                                             | [paramnet_gsv_rpf.yaml](models/paramnet_gsv_rpf.yaml)      | Perspective Field + camera parameters (roll, pitch, vfov)         | Uncropped, street view🏙️ data.                                                              |
+| [PersNet_Paramnet-GSV-uncentered](https://www.dropbox.com/s/ufdadxigewakzlz/paramnet_gsv_rpfpp.pth)                       | [GSV](https://research.google/pubs/pub36899/)                                                                             | [paramnet_gsv_rpfpp.yaml](models/paramnet_gsv_rpfpp.yaml)    | Perspective Field + camera parameters (roll, pitch, vfov, cx, cy) | Cropped, street view🏙️ data.                                                               |
+
+## Coordinate Frame
+
+<p align="center">
+
+![alt text](assets/coordinate.png)
+
+`yaw / azimuth`: camera rotation about the y-axis
+`pitch / elevation`: camera rotation about the x-axis
+`roll`: camera rotation about the z-axis
+
+Extrinsics: `rotz(roll).dot(rotx(elevation)).dot(roty(azimuth))`
+
+</p>
+
+## Inference
+- [Live Demo 🤗](https://huggingface.co/spaces/jinlinyi/PerspectiveFields). 
+- We also provide notebook to [Predict Perspective Fields](./jupyter-notebooks/predict_perspective_fields.ipynb) and [Recover Camera Parameters](./jupyter-notebooks/perspective_paramnet.ipynb). 
+- Alternatively, you can also run `demo.py`:
+```bash
+python demo/demo.py \
+--config-file <config-path> \ #../jupyter-notebooks/models/cvpr2023.yaml 
+--input <input-path> \ #../assets/imgs 
+--output <output-path> \ #debug 
+--opts MODEL.WEIGHTS <ckpt-path> #../jupyter-notebooks/models/cvpr2023.pth
+```
+
+## Camera Parameters to Perspective Fields
+Checkout [Jupyter Notebook](./jupyter-notebooks/camera2perspective.ipynb). 
+Perspective Fields can be calculated from camera parameters. If you prefer, you can also manually calculate the corresponding Up-vector and Latitude map by following Equations 1 and 2 in our paper.
+Our code currently supports:
+1) [Pinhole model](https://hedivision.github.io/Pinhole.html) [Hartley and Zisserman 2004] (Perspective Projection) 
+```python
+from perspective2d.utils.panocam import PanoCam
+# define parameters
+roll = 0
+pitch = 20
+vfov = 70
+width = 640
+height = 480
+# get Up-vectors.
+up = PanoCam.get_up(np.radians(vfov), width, height, np.radians(pitch), np.radians(roll))
+# get Latitude.
+lati = PanoCam.get_lat(np.radians(vfov), width, height, np.radians(pitch), np.radians(roll))
+```
+2) [Unified Spherical Model](https://drive.google.com/file/d/1pZgR3wNS6Mvb87W0ixOHmEVV6tcI8d50/view) [Barreto 2006; Mei and Rives 2007] (Distortion). 
+```python
+xi = 0.5 # distortion parameter from Unified Spherical Model
+
+x = -np.sin(np.radians(vfov/2))
+z = np.sqrt(1 - x**2)
+f_px_effective = -0.5*(width/2)*(xi+z)/x
+crop, _, _, _, up, lat, xy_map = PanoCam.crop_distortion(equi_img,
+                                             f=f_px_effective,
+                                             xi=xi,
+                                             H=height,
+                                             W=width,
+                                             az=yaw, # degrees
+                                             el=-pitch,
+                                             roll=-roll)
+```
+
+## Visualize Perspective Fields
+We provide a one-line code to blend Perspective Fields onto input image.
+```python
+import matplotlib.pyplot as plt
+from perspective2d.utils import draw_perspective_fields
+# Draw up and lati on img. lati is in radians.
+blend = draw_perspective_fields(img, up, lati)
+# visualize with matplotlib
+plt.imshow(blend)
+plt.show()
+```
+Perspective Fields can serve as an easy visual check for correctness of the camera parameters.
+
+- For example, we can visualize the Perspective Fields based on calibration results from this awesome [repo](https://github.com/dompm/spherical-distortion-dataset).
+
+
+<p align="center">
+
+![alt text](assets/distortion_vis.png)
+
+- Left: We plot the perspective fields based on the numbers printed on the image, they look accurate😊;
+
+- Mid: If we try a number that is 10% off (0.72*0.9=0.648), we see mismatch in Up directions at the top right corner;
+
+- Right: If distortion is 20% off (0.72*0.8=0.576), the mismatch becomes more obvious.
+</p>
 
 Citation
 --------
