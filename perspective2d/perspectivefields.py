@@ -204,6 +204,22 @@ class PerspectiveFields(nn.Module):
         predictions = self.forward([inputs])[0]
         return predictions
 
+    @torch.no_grad()
+    def inference_batch(self, img_bgr_list):
+        input_list = []
+        for img_bgr in img_bgr_list:
+            original_image = img_bgr.copy()
+            if self.input_format == "RGB":
+                # whether the model expects BGR inputs or RGB
+                original_image = original_image[:, :, ::-1]
+            height, width = original_image.shape[:2]
+            image = self.aug.apply_image(original_image)
+            image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1))
+            inputs = {"image": image, "height": height, "width": width}
+            input_list.append(inputs)
+        predictions = self.forward(input_list)
+        return predictions
+
     def forward(self, batched_inputs) -> dict:
         """
         Forward pass of the PerspectiveFields model.
@@ -249,5 +265,8 @@ class PerspectiveFields(nn.Module):
                 param["pred_rel_cx"] = torch.zeros_like(param["pred_vfov"])
             if "pred_rel_cy" not in param.keys():
                 param["pred_rel_cy"] = torch.zeros_like(param["pred_vfov"])
-            processed_results[0].update(param)
+            assert len(processed_results) == len(param["pred_vfov"])
+            for i in range(len(processed_results)):
+                param_tmp = {k: v[i] for k, v in param.items()}
+                processed_results[i].update(param_tmp)
         return processed_results

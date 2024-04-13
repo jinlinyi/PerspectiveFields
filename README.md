@@ -106,6 +106,9 @@ pf_model = PerspectiveFields(version).eval().cuda()
 img_bgr = cv2.imread('assets/imgs/cityscape.jpg')
 # inference
 predictions = pf_model.inference(img_bgr=img_bgr)
+
+# alternatively, inference a batch of images
+predictions = pf_model.inference_batch(img_bgr_list=[img_bgr_0, img_bgr_1, img_bgr_2])
 ```
 - Or checkout [Live Demo 🤗](https://huggingface.co/spaces/jinlinyi/PerspectiveFields). 
 - Notebook to [Predict Perspective Fields](./notebooks/predict_perspective_fields.ipynb). 
