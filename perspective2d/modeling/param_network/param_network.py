@@ -210,15 +210,13 @@ class ParamNetConvNextRegress(nn.Module):
                 param["pred_general_vfov"] = param["pred_vfov"]
             if "pred_rel_focal" not in param:
                 param["pred_rel_focal"] = torch.FloatTensor(
-                    [
-                        general_vfov_to_focal(
-                            to_numpy(param["pred_rel_cx"]),
-                            to_numpy(param["pred_rel_cy"]),
-                            1,
-                            to_numpy(param["pred_general_vfov"]),
-                            degree=True,
-                        )
-                    ]
+                    general_vfov_to_focal(
+                        to_numpy(param["pred_rel_cx"]),
+                        to_numpy(param["pred_rel_cy"]),
+                        1,
+                        to_numpy(param["pred_general_vfov"]),
+                        degree=True,
+                    )
                 )
             return param
 

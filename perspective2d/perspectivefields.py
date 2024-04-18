@@ -265,7 +265,7 @@ class PerspectiveFields(nn.Module):
                 param["pred_rel_cx"] = torch.zeros_like(param["pred_vfov"])
             if "pred_rel_cy" not in param.keys():
                 param["pred_rel_cy"] = torch.zeros_like(param["pred_vfov"])
-            assert len(processed_results) == len(param["pred_vfov"])
+            assert len(processed_results) == len(param["pred_general_vfov"])
             for i in range(len(processed_results)):
                 param_tmp = {k: v[i] for k, v in param.items()}
                 processed_results[i].update(param_tmp)

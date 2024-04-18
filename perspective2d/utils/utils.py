@@ -79,10 +79,14 @@ def general_vfov_to_focal(rel_cx, rel_cy, h, gvfov, degree):
         q_sqr = (focal / h) ** 2 + d_cx**2 + (d_cy - 0.5) ** 2
         cos_FoV = (p_sqr + q_sqr - 1) / 2 / np.sqrt(p_sqr) / np.sqrt(q_sqr)
         return cos_FoV - target_cos_FoV
-
     if degree:
         gvfov = np.radians(gvfov)
-    focal = scipy.optimize.fsolve(fun, 1.5, args=(h, rel_cx, rel_cy, np.cos(gvfov)))[0]
+    if type(rel_cx) != np.ndarray:
+        # if input is float
+        focal = scipy.optimize.fsolve(fun, 1.5, args=(h, rel_cx, rel_cy, np.cos(gvfov)))[0]
+    else:
+        # if input is numpy array
+        focal = scipy.optimize.fsolve(fun, np.ones(len(rel_cx)) * 1.5, args=(h, rel_cx, rel_cy, np.cos(gvfov)))
     focal = np.abs(focal)
     return focal
 
