@@ -199,7 +199,7 @@ class PerspectiveFields(nn.Module):
             original_image = original_image[:, :, ::-1]
         height, width = original_image.shape[:2]
         image = self.aug.apply_image(original_image)
-        image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1))
+        image = torch.from_numpy(image.astype(np.float32).transpose(2, 0, 1))
         inputs = {"image": image, "height": height, "width": width}
         predictions = self.forward([inputs])[0]
         return predictions
@@ -214,7 +214,7 @@ class PerspectiveFields(nn.Module):
                 original_image = original_image[:, :, ::-1]
             height, width = original_image.shape[:2]
             image = self.aug.apply_image(original_image)
-            image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1))
+            image = torch.from_numpy(image.astype(np.float32).transpose(2, 0, 1))
             inputs = {"image": image, "height": height, "width": width}
             input_list.append(inputs)
         predictions = self.forward(input_list)
