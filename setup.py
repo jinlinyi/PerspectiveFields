@@ -14,7 +14,7 @@ setup(
     install_requires=[
         "albumentations",
         "matplotlib",
-        "numpy",
+        "numpy==1.26.4",
         "omegaconf",
         "opencv-contrib-python",
         "pillow",
